@@ -34,20 +34,24 @@ const sessionFields = z.object({
   endsAt: z.coerce.date(),
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
-  radius: z.number().int().min(20).max(MAX_RADIUS),
+  radius: z.number().int().min(1).max(MAX_RADIUS),
   verification: z.enum(VERIFICATIONS),
   passcode: z.string().min(6).max(32),
   allowedEmails: z.array(email).max(2000),
+  lateAfterTime: z.coerce.date(),
 });
 
 export const createSessionBody = sessionFields
-  .partial({ description: true, passcode: true, allowedEmails: true })
+  .partial({ description: true, passcode: true, allowedEmails: true, lateAfterTime: true })
   .strict()
   .superRefine((v, ctx) => {
     if (v.endsAt <= v.startsAt) ctx.addIssue({ code: 'custom', path: ['endsAt'], message: 'End must be after start.' });
     if (v.verification === 'email' && !v.allowedEmails?.length)
       ctx.addIssue({ code: 'custom', path: ['allowedEmails'], message: 'Add at least one email.' });
+    if (v.lateAfterTime && (v.lateAfterTime <= v.startsAt || v.lateAfterTime > v.endsAt))
+      ctx.addIssue({ code: 'custom', path: ['lateAfterTime'], message: 'Late time must be between start and end.' });
   });
+
 
 export const updateSessionBody = sessionFields
   .partial()

@@ -7,7 +7,7 @@ export interface Fix extends LatLng { accuracy: number }
 export interface ParticipantSession {
   id: string; title: string; description: string; venue: string;
   startsAt: string; endsAt: string; status: Status; location: LatLng; radius: number;
-  verification: Verification; distance: number; checkedIn: boolean; sheet?: any;
+  verification: Verification; distance: number; checkedIn: boolean; sheet?: any; lateAfterTime?: string;
 }
 
 export interface SheetSettings {
@@ -19,7 +19,7 @@ export interface CreatorSession {
   id: string; title: string; description: string; venue: string;
   startsAt: string; endsAt: string; status: Status; location: LatLng; radius: number;
   verification: Verification; allowedEmails: string[]; shareLink: string;
-  sheet: any | null; checkInCount: number; locked: boolean; sheetLocked: boolean;
+  sheet: any | null; checkInCount: number; locked: boolean; sheetLocked: boolean; lateAfterTime?: string;
 }
 
 export interface RecordRow {
@@ -44,5 +44,5 @@ export interface Me {
 export interface SessionInput {
   title: string; description: string; venue: string;
   startsAt: string; endsAt: string; lat: number; lng: number; radius: number;
-  verification: Verification; passcode?: string; allowedEmails?: string[];
+  verification: Verification; passcode?: string; allowedEmails?: string[]; lateAfterTime?: string;
 }

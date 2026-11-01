@@ -10,8 +10,6 @@ const schema = z.object({
   CLIENT_URL: z.string().default('http://localhost:5173'),
   JWT_SECRET: z.string().default('your-secret-key-change-in-production'),
   MAX_GPS_ACCURACY: z.coerce.number().default(100),
-  LATE_AFTER_MINUTES: z.coerce.number().default(10),
-  EARLY_CHECKIN_MINUTES: z.coerce.number().default(15),
   LINK_SESSIONS_IN_LIST: z.enum(['true', 'false']).default('false'),
 });
 

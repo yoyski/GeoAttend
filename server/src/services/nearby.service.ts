@@ -28,7 +28,6 @@ const allowedByEmail = (s: SessionDoc, user: UserDoc) =>
 export async function findNearby(user: UserDoc, p: { lat: number; lng: number; accuracy: number }) {
   assertAccuracy(p.accuracy);
   const now = new Date();
-  const early = new Date(now.getTime() + env.EARLY_CHECKIN_MINUTES * 60_000);
 
   const rows = await Session.aggregate([
     {
@@ -37,7 +36,7 @@ export async function findNearby(user: UserDoc, p: { lat: number; lng: number; a
         distanceField: 'distance',
         maxDistance: MAX_RADIUS,
         spherical: true,
-        query: { status: 'Open', startsAt: { $lte: early }, endsAt: { $gte: now } },
+        query: { status: 'Open', startsAt: { $lte: now }, endsAt: { $gte: now } },
       },
     },
     { $match: { $expr: { $lte: ['$distance', '$radius'] } } },

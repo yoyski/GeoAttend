@@ -18,11 +18,12 @@ const sessionSchema = new Schema(
       type: { type: String, enum: ['Point'], default: 'Point' },
       coordinates: { type: [Number], required: true },
     },
-    radius: { type: Number, required: true, min: 20, max: MAX_RADIUS },
+    radius: { type: Number, required: true, min: 1, max: MAX_RADIUS },
     verification: { type: String, enum: VERIFICATIONS, required: true },
     passcodeHash: { type: String },
     linkToken: { type: String, required: true },
     allowedEmails: { type: [String], default: [] },
+    lateAfterTime: { type: Date }, // Optional: specific time to mark as late (if not set, no late marking)
     sheet: { type: Schema.Types.Mixed, default: null }, // printable sheet design settings
     sheetLocked: { type: Boolean, default: false }, // locked after first check-in, prevents editing
   },

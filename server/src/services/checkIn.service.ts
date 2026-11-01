@@ -30,8 +30,8 @@ export async function checkIn(user: UserDoc, sessionId: string, input: CheckInIn
   if (s.status !== 'Open') throw new HttpError(409, 'SESSION_CLOSED', 'This session is not open for check-in.');
 
   const now = new Date();
-  const opensAt = s.startsAt.getTime() - env.EARLY_CHECKIN_MINUTES * 60_000;
-  if (now.getTime() < opensAt || now.getTime() > s.endsAt.getTime()) {
+  // Only check if within session time window (startsAt to endsAt)
+  if (now.getTime() < s.startsAt.getTime() || now.getTime() > s.endsAt.getTime()) {
     throw new HttpError(409, 'OUTSIDE_TIME_WINDOW', 'Check-in is not open at this time.');
   }
 
@@ -51,8 +51,8 @@ export async function checkIn(user: UserDoc, sessionId: string, input: CheckInIn
     }
   }
 
-  // 5. late flag
-  const late = now.getTime() > s.startsAt.getTime() + env.LATE_AFTER_MINUTES * 60_000;
+  // 5. late flag - use session's lateAfterTime if set
+  const late = s.lateAfterTime ? now.getTime() > s.lateAfterTime.getTime() : false;
 
   // 6. record it; the unique (session, user) index blocks duplicates at the database level
   let record;

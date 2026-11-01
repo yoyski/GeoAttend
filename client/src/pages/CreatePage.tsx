@@ -64,7 +64,7 @@ const strength = (p: string) => (p.length >= 10 ? 'Strong' : p.length >= 6 ? 'Go
 const mut = { color: 'var(--mut)' } as const;
 const dateCls = '[color-scheme:light_dark] min-w-0 text-[13px] min-[480px]:text-base';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_R = 20;
+const MIN_R = 1;
 const MAX_R = 400;
 
 const osm = (lat: number, lng: number) =>
@@ -126,6 +126,7 @@ export function CreatePage() {
       verification: 'location' as Verification,
       passcode: genPasscode(),
       emails: [] as string[],
+      lateAfterTime: '', // HH:MM format
     };
   });
   const [emailDraft, setEmailDraft] = useState('');
@@ -181,6 +182,7 @@ export function CreatePage() {
         lng: f.lng,
         radius: f.radius,
         verification: f.verification,
+        ...(f.lateAfterTime ? { lateAfterTime: new Date(`${f.dt}T${f.lateAfterTime}`).toISOString() } : {}),
         ...(f.verification === 'passcode' ? { passcode: f.passcode } : {}),
         ...(f.verification === 'email' ? { allowedEmails: f.emails } : {}),
       });
@@ -285,6 +287,19 @@ export function CreatePage() {
                 aria-label="Check-in radius in metres"
                 className="w-full accent-[var(--sig)]"
                 onChange={(e) => set('radius', Number(e.target.value))}
+              />
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <Label htmlFor="lateTime">Consider late after (optional)</Label>
+              <p className="text-[13px]" style={mut}>
+                Set a specific time. Check-ins after this will be flagged as late. Leave empty to not track lateness.
+              </p>
+              <Input
+                id="lateTime"
+                type="time"
+                value={f.lateAfterTime}
+                onChange={(e) => set('lateAfterTime', e.target.value)}
               />
             </div>
           </CardContent>
