@@ -1,0 +1,84 @@
+### Try these with the VS Code "REST Client" extension (or copy the curl equivalents).
+### Mock auth: pick who you are with the x-mock-user header. No header = alex@example.com.
+
+@base = http://localhost:5000/api
+
+### Health
+GET {{base}}/health
+
+### Who am I
+GET {{base}}/me
+x-mock-user: maria@example.com
+
+### Sessions near Grace Hall (inside the 100 m radius) -> returns "Sunday service"
+POST {{base}}/sessions/nearby
+x-mock-user: maria@example.com
+Content-Type: application/json
+
+{ "lat": 14.58361, "lng": 120.97916, "accuracy": 12 }
+
+### Far away -> empty list
+POST {{base}}/sessions/nearby
+x-mock-user: maria@example.com
+Content-Type: application/json
+
+{ "lat": 14.7, "lng": 121.2, "accuracy": 12 }
+
+### Weak GPS -> 422 GPS_TOO_WEAK
+POST {{base}}/sessions/nearby
+Content-Type: application/json
+
+{ "lat": 14.58361, "lng": 120.97916, "accuracy": 250 }
+
+### Check in (replace SESSION_ID with an id printed by `npm run seed`)
+POST {{base}}/sessions/SESSION_ID/check-in
+x-mock-user: maria@example.com
+Content-Type: application/json
+
+{ "lat": 14.58361, "lng": 120.97916, "accuracy": 12 }
+
+### Passcode session check-in
+POST {{base}}/sessions/PASSCODE_SESSION_ID/check-in
+x-mock-user: maria@example.com
+Content-Type: application/json
+
+{ "lat": 14.6538, "lng": 121.0685, "accuracy": 10, "passcode": "1234" }
+
+### My check-in history
+GET {{base}}/me/history
+x-mock-user: maria@example.com
+
+### Creator: my sessions
+GET {{base}}/sessions/mine
+
+### Creator: create a session (email-restricted)
+POST {{base}}/sessions
+Content-Type: application/json
+
+{
+  "title": "Math review",
+  "category": "School",
+  "venue": "Room 12",
+  "startsAt": "2026-10-26T09:00:00.000Z",
+  "endsAt": "2026-10-26T11:00:00.000Z",
+  "lat": 14.5995,
+  "lng": 120.9842,
+  "radius": 60,
+  "verification": "email",
+  "allowedEmails": ["maria@example.com", "ben@example.com"]
+}
+
+### Creator: records, manual add, CSV
+GET {{base}}/sessions/SESSION_ID/records
+
+###
+POST {{base}}/sessions/SESSION_ID/records
+Content-Type: application/json
+
+{ "name": "Walk-in Guest" }
+
+###
+GET {{base}}/sessions/SESSION_ID/export.csv
+
+### Creator: live attendance (Server-Sent Events). EventSource cannot send headers, so use ?as=
+GET {{base}}/sessions/SESSION_ID/live?as=alex@example.com

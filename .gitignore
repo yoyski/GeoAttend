@@ -1,0 +1,30 @@
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Build outputs
+build/
+coverage/
+
+# OS files
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Testing
+test-results/
+
+# Temporary files
+tmp/
+temp/

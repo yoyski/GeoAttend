@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* THEME: GRAPHITE — near-monochrome, electric blue signal */
+
+:root {
+    /* Light mode (default) */
+    --bg: #F4F4F2;
+    --card: #FFFFFF;
+    --ink: #111111;
+    --mut: #666666;
+    --line: #DADAD6;
+    --pine: #1F1F1F;
+    --onp: #FFFFFF;
+    --tint: #EAEAE6;
+    --sig: #2F5BFF;
+    --sigt: #DFE6FF;
+    --err: #C62828;
+    --errt: #F8DCDC;
+    --map: #E9E9E5;
+}
+
+/* OS prefers dark, unless the user explicitly picked light */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #0E0E0F;
+        --card: #17171A;
+        --ink: #F2F2F0;
+        --mut: #9A9A9A;
+        --line: #2A2A2E;
+        --pine: #E8E8E8;
+        --onp: #0E0E0F;
+        --tint: #202024;
+        --sig: #7C98FF;
+        --sigt: #1B2340;
+        --err: #F28A74;
+        --errt: #3B1F19;
+        --map: #19191C;
+    }
+}
+
+/* Explicit dark choice */
+[data-theme="dark"] {
+    --bg: #0E0E0F;
+    --card: #17171A;
+    --ink: #F2F2F0;
+    --mut: #9A9A9A;
+    --line: #2A2A2E;
+    --pine: #E8E8E8;
+    --onp: #0E0E0F;
+    --tint: #202024;
+    --sig: #7C98FF;
+    --sigt: #1B2340;
+    --err: #F28A74;
+    --errt: #3B1F19;
+    --map: #19191C;
+}
+
+html {
+    background-color: var(--bg);
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
+}
+
+button,
+input,
+textarea,
+select {
+    font-family: inherit;
+}
