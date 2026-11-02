@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState, useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { LoginGate } from './components/LoginGate';
 import { SplashScreen } from './components/SplashScreen';
 import { useAuth } from './hooks/useAuth';
 
@@ -28,6 +29,7 @@ function LoadingFallback() {
   );
 }
 
+/** Full-page gate for the sheet editor, which has no app layout around it. */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
@@ -43,6 +45,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
+  return <>{children}</>;
+}
+
+/**
+ * Gate for pages that only have content for a logged-in person (their sessions, a session they manage, their account).
+ * Logged-out visitors still see the app around it, with a "log in" card in place of the page.
+ */
+function Gated({ children, title, desc, icon }: { children: React.ReactNode; title: string; desc: string; icon?: string }) {
+  const { user, loading } = useAuth();
+  if (loading) return <p className="py-10 text-center text-sm text-[var(--mut)]">Loading...</p>;
+  if (!user) return <LoginGate title={title} desc={desc} icon={icon} />;
   return <>{children}</>;
 }
 
@@ -83,19 +96,36 @@ export default function App() {
             }
           />
 
-          <Route
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
+          {/* App pages: anyone can look around. Only the actions (check in, publish) and personal pages ask for a login. */}
+          <Route element={<Layout />}>
             <Route index element={<Navigate to="/attend" replace />} />
             <Route path="/attend" element={<AttendPage />} />
+            {/* Open to everyone: the form works, and Publish asks you to log in (your answers are kept). */}
             <Route path="/create" element={<CreatePage />} />
-            <Route path="/mine" element={<MinePage />} />
-            <Route path="/manage/:id" element={<ManagePage />} />
-            <Route path="/account" element={<AccountPage />} />
+            <Route
+              path="/mine"
+              element={
+                <Gated title="Log in to see your sessions" desc="Sessions you create show up here, with their check-ins." icon="ti-list-details">
+                  <MinePage />
+                </Gated>
+              }
+            />
+            <Route
+              path="/manage/:id"
+              element={
+                <Gated title="Log in to manage this session" desc="Only the person who created a session can manage it." icon="ti-settings">
+                  <ManagePage />
+                </Gated>
+              }
+            />
+            <Route
+              path="/account"
+              element={
+                <Gated title="Log in to see your account" desc="Your profile, photo and password live here." icon="ti-user-circle">
+                  <AccountPage />
+                </Gated>
+              }
+            />
             <Route path="*" element={<p className="mt-4">Page not found.</p>} />
           </Route>
         </Routes>

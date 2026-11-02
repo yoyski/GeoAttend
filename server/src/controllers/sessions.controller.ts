@@ -11,7 +11,7 @@ const id = (req: Request) => req.params.id as string;
 
 // Participant
 export const nearbyList = async (req: Request, res: Response) =>
-  ok(res, await nearby.findNearby(currentUser(req), req.body));
+  ok(res, await nearby.findNearby(req.user || null, req.body));
 export const participantDetail = async (req: Request, res: Response) =>
   ok(res, await nearby.getForParticipant(req.user || null, id(req), req.query as never));
 export const checkIn = async (req: Request, res: Response) =>

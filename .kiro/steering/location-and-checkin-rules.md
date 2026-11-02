@@ -9,7 +9,7 @@ fileMatchPattern: "server/**"
 Use the Haversine formula in `utils/haversine.ts`, in metres. Inputs are raw `lat`, `lng` from the request. Unit-tested against known distances.
 
 ## Accuracy
-Reject any request with `accuracy > env.MAX_GPS_ACCURACY` (default 100m; HTTP 422, code `GPS_TOO_WEAK`). Always store `accuracy` and `distance` on the check-in. The creator UI flags records with `accuracy > 50` as **Low accuracy** (`lowAccuracy: true` in the record DTO).
+Always store `accuracy` and `distance` on the check-in. The creator UI flags records with `accuracy > 50` as **Low accuracy** (`lowAccuracy: true` in the record DTO).
 
 ## Visibility (`POST /sessions/nearby` and `GET /sessions/:id`)
 `nearby` uses:
@@ -28,17 +28,16 @@ Session.aggregate([
 - **Link verification removed** – `linkToken` exists for share URLs but is not checked during check-in.
 
 ## Check-in order (`services/checkIn.service.ts`)
-1. accuracy <= MAX_GPS_ACCURACY (default 100)
-2. session exists and `status === 'Open'`
-3. distance <= radius
-4. verification:
+1. session exists and `status === 'Open'`
+2. distance <= radius
+3. verification:
    - `passcode`: bcrypt compare against `passcodeHash`
    - `email`: `user.verified === true` AND `user.email` in `session.allowedEmails`
    - `location`: no extra check
-5. `late = now > startsAt + env.LATE_AFTER_MINUTES` (default 10 min)
-6. create `CheckIn`; the unique partial index `{ session, user }` (where `user` exists) rejects duplicates (409 `ALREADY_CHECKED_IN`)
-7. set `session.sheetLocked = true` if this is the first check-in
-8. (no live event emitted – SSE `/live` polls records on its own)
+4. `late = now > startsAt + env.LATE_AFTER_MINUTES` (default 10 min)
+5. create `CheckIn`; the unique partial index `{ session, user }` (where `user` exists) rejects duplicates (409 `ALREADY_CHECKED_IN`)
+6. set `session.sheetLocked = true` if this is the first check-in
+7. (no live event emitted – SSE `/live` polls records on its own)
 
 Each failure returns a distinct error `code` the UI maps to a friendly message.
 

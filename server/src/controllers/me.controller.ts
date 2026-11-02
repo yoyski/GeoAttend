@@ -23,6 +23,11 @@ export const changePassword = async (req: Request, res: Response) => {
   const user = currentUser(req);
   const { currentPassword, newPassword } = req.body as { currentPassword: string; newPassword: string };
 
+  // Check if user has a password (OAuth users don't)
+  if (!user.passwordHash) {
+    throw new HttpError(400, 'VALIDATION', 'This account uses OAuth authentication and does not have a password.');
+  }
+
   if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
     throw new HttpError(401, 'UNAUTHENTICATED', 'Current password is incorrect.');
   }

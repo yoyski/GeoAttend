@@ -1,10 +1,10 @@
 import { useLayoutEffect, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { sessionsApi } from '../api/endpoints';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -62,7 +62,10 @@ const timeOf = (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: 
 const dayOf = (d: Date) => d.toLocaleDateString([], { month: 'short', day: 'numeric' });
 const when = (a: string, b: string) => `${dayOf(new Date(a))}, ${timeOf(new Date(a))} to ${timeOf(new Date(b))}`;
 
-function newCfg(s: CreatorSession | null): Cfg {
+/** What the sheet needs from a session. A real session fits, and so does the unsaved form on the Create page. */
+type Seed = { category?: string; title: string; venue: string; startsAt: string; endsAt: string };
+
+function newCfg(s: Seed | null): Cfg {
   const c = s?.category;
   return {
     title: `${c === 'Employee' ? 'Meeting' : c === 'School' ? 'Class' : 'Event'} attendance`,
@@ -80,7 +83,7 @@ function newCfg(s: CreatorSession | null): Cfg {
     rows: 25,
     det: 1,
     f: [
-      ['Date', new Date().toLocaleDateString('en-US')],
+      ['Date', (s ? new Date(s.startsAt) : new Date()).toLocaleDateString('en-US')],
       ['Time', s ? when(s.startsAt, s.endsAt) : ''],
       ['Place', s?.venue ?? ''],
       ['Moderator', ''],
@@ -90,6 +93,12 @@ function newCfg(s: CreatorSession | null): Cfg {
     logo: 1,
     qr: 1,
   };
+}
+
+/** Fill the Time, Place and Subject rows from the session when they are still blank (keeps anything typed). */
+function fillBlank(c: Cfg, s: Seed): Cfg {
+  const fresh = newCfg(s).f;
+  return { ...c, f: c.f.map((row) => (row[1] ? row : (fresh.find((x) => x[0] === row[0]) ?? row))) as [string, string][] };
 }
 
 /** Accept saved settings only if they have the current shape (older saves are ignored). */
@@ -133,7 +142,10 @@ const GRID = '#9CA3AF'; // table line colour
 export function SheetPage() {
   const { id = 'preview' } = useParams();
   const nav = useNavigate();
+  const loc = useLocation();
   const isPreview = id === 'preview';
+  // Opened from Create: the details typed there, so the sheet is not blank.
+  const prefill = (loc.state as { prefill?: Seed } | null)?.prefill ?? null;
 
   // Check if this is view-only mode (attendee viewing) vs edit mode (creator editing)
   const isViewOnly = window.location.pathname.includes('/s/') && window.location.pathname.includes('/sheet');
@@ -157,7 +169,8 @@ export function SheetPage() {
   useEffect(() => {
     if (inited.current) return;
     if (isPreview) {
-      setCfg(norm(loadRaw(id)) ?? newCfg(null));
+      const saved = norm(loadRaw(id));
+      setCfg(prefill ? (saved ? fillBlank(saved, prefill) : newCfg(prefill)) : saved ?? newCfg(null));
       inited.current = true;
     } else if (session.data) {
       // saved on the server (Session.sheet) -> saved in this browser -> defaults
@@ -168,6 +181,12 @@ export function SheetPage() {
   }, [id, isPreview, session.data]);
 
   const up = (patch: Partial<Cfg>) => setCfg((c) => (c ? { ...c, ...patch } : c));
+
+  // Remember how the design looked when it opened, so Back can warn before throwing edits away.
+  const opened = useRef<string | null>(null);
+  useEffect(() => {
+    if (cfg && opened.current === null) opened.current = JSON.stringify(cfg);
+  }, [cfg]);
 
   /** Back to where we came from; if this page was opened directly, go to the session instead. */
   const goBack = () => {
@@ -205,6 +224,12 @@ export function SheetPage() {
 
   const [newCol, setNewCol] = useState('');
   const [saving, setSaving] = useState(false);
+  const editing = !isViewOnly && !readOnly;
+  const dirty = editing && !!cfg && opened.current !== null && JSON.stringify(cfg) !== opened.current;
+  const leave = () => {
+    if (dirty && !window.confirm('Leave without saving? Your changes to the sheet will be lost.')) return;
+    goBack();
+  };
 
   /* paper */
   const size = SIZES[cfg?.paper ?? 'a4'];
@@ -598,6 +623,19 @@ export function SheetPage() {
       )
     : null;
 
+  /** Print and Save sit in the page header on wide screens and in a bar fixed to the bottom on phones. */
+  const actions = editing ? (
+    <>
+      <Button type="button" variant="outline" onClick={() => setPrintTick((n) => n + 1)}>
+        <i className="ti ti-printer mr-2 text-[18px]" aria-hidden="true" />
+        Print
+      </Button>
+      <Button type="button" disabled={saving || locked} onClick={save}>
+        {saving ? 'Saving...' : locked ? 'Sheet locked' : dirty ? 'Save and go back' : 'Done'}
+      </Button>
+    </>
+  ) : null;
+
   /* ---------- page ---------- */
   return wrap(
     <>
@@ -606,26 +644,27 @@ export function SheetPage() {
       <div className="noprint">
         <button
           type="button"
-          onClick={goBack}
+          onClick={leave}
           className={`inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--mut)] hover:text-[var(--ink)] ${focusRing}`}
         >
           <i className="ti ti-arrow-left text-[14px]" aria-hidden="true" />
           Back
         </button>
-        <h1
-          className="mt-2 text-[28px] font-bold leading-tight tracking-tight"
-        >
-          Attendance sheet
-        </h1>
-        <p className="pb-4 text-[13px]" style={mut}>
-          {isViewOnly
-            ? 'View the attendance sheet for this session.'
-            : printMode
-              ? 'Print this sheet, or choose Save as PDF in the print dialog.'
-              : viewMode
-                ? 'Preview of the attendance sheet. Use Print to print or save it as a PDF.'
-                : 'Edit the design and preview the printed page.'}
-        </p>
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+          <div className="min-w-0">
+            <h1 className="text-[28px] font-bold leading-tight tracking-tight">Attendance sheet</h1>
+            <p className="pb-4 text-[13px]" style={mut}>
+              {isViewOnly
+                ? 'View the attendance sheet for this session.'
+                : printMode
+                  ? 'Print this sheet, or choose Save as PDF in the print dialog.'
+                  : viewMode
+                    ? 'Preview of the attendance sheet. Use Print to print or save it as a PDF.'
+                    : 'Design the sheet. The preview shows exactly what will print.'}
+            </p>
+          </div>
+          {editing && <div className="hidden shrink-0 gap-2 pb-4 min-[900px]:flex">{actions}</div>}
+        </div>
       </div>
 
       <ErrorBox error={session.error} />
@@ -690,7 +729,7 @@ export function SheetPage() {
             </div>
           )}
 
-          {!isViewOnly && (
+          {readOnly && !isViewOnly && (
             <Button type="button" className="noprint mt-3 w-full" onClick={() => setPrintTick((n) => n + 1)}>
               <i className="ti ti-printer mr-2 text-[18px]" aria-hidden="true" />
               Print sheet
@@ -701,60 +740,52 @@ export function SheetPage() {
         {/* Controls - only show if not view-only mode */}
         {!isViewOnly && !readOnly && (
           <div className="noprint min-w-0 space-y-5">
-            {/* Design */}
+            {/* Page setup */}
             <Card>
               <CardHeader>
-                <CardTitle>Design</CardTitle>
+                <CardTitle>Page setup</CardTitle>
+                <CardDescription>Heading, paper and colour.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="sheet-title">Sheet title</Label>
-                  <Input id="sheet-title" value={cfg.title} onChange={(e) => up({ title: e.target.value })} />
+                  <Label htmlFor="sheet-title">Sheet heading</Label>
+                  <Input id="sheet-title" value={cfg.title} maxLength={60} onChange={(e) => up({ title: e.target.value })} />
+                  <p className="text-[13px]" style={mut}>
+                    Printed at the top of the page. It is separate from the session name.
+                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Color theme</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {PAL.map((x, i) => (
-                      <button
-                        key={x.name}
-                        type="button"
-                        aria-label={`${x.name} theme`}
-                        aria-pressed={cfg.pal === i}
-                        title={x.name}
-                        onClick={() => up({ pal: i })}
-                        className={`h-[38px] w-[38px] shrink-0 cursor-pointer rounded-full border-[3px] border-[var(--card)] p-0 ${focusRing}`}
-                        style={{
-                          background: `linear-gradient(135deg, ${x.a} 50%, ${x.b} 50%)`,
-                          outline: cfg.pal === i ? '3px solid var(--pine)' : '1px solid var(--line)',
-                        }}
-                      />
-                    ))}
+                <div className="grid gap-5 sm:grid-cols-[1.5fr_1fr]">
+                  <div className="min-w-0 space-y-2">
+                    <Label>Paper size</Label>
+                    <Select value={cfg.paper} onValueChange={(v) => up({ paper: v as PaperKey })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select paper" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAPER_ORDER.map((key) => (
+                          <SelectItem key={key} value={key}>
+                            {SIZES[key].label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Paper */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Paper</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="space-y-2">
-                  <Label>Paper size</Label>
-                  <Select value={cfg.paper} onValueChange={(v) => up({ paper: v as PaperKey })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select paper" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PAPER_ORDER.map((key) => (
-                        <SelectItem key={key} value={key}>
-                          {SIZES[key].label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="min-w-0 space-y-2">
+                    <Label>Rows per page</Label>
+                    <Select value={String(cfg.rows)} onValueChange={(v) => up({ rows: Number(v) })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROW_OPTIONS.map((n) => (
+                          <SelectItem key={n} value={String(n)}>
+                            {n}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -782,6 +813,27 @@ export function SheetPage() {
                       <i className="ti ti-rectangle mr-1.5 text-[16px]" aria-hidden="true" />
                       Landscape
                     </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Colour theme</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {PAL.map((x, i) => (
+                      <button
+                        key={x.name}
+                        type="button"
+                        aria-label={`${x.name} theme`}
+                        aria-pressed={cfg.pal === i}
+                        title={x.name}
+                        onClick={() => up({ pal: i })}
+                        className={`h-[38px] w-[38px] shrink-0 cursor-pointer rounded-full border-[3px] border-[var(--card)] p-0 ${focusRing}`}
+                        style={{
+                          background: `linear-gradient(135deg, ${x.a} 50%, ${x.b} 50%)`,
+                          outline: cfg.pal === i ? '3px solid var(--pine)' : '1px solid var(--line)',
+                        }}
+                      />
+                    ))}
                   </div>
                 </div>
               </CardContent>
@@ -901,22 +953,6 @@ export function SheetPage() {
                     )}
                   </div>
                 )}
-
-                <div className="space-y-2 pt-3">
-                  <Label>Number of rows</Label>
-                  <Select value={String(cfg.rows)} onValueChange={(v) => up({ rows: Number(v) })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ROW_OPTIONS.map((n) => (
-                        <SelectItem key={n} value={String(n)}>
-                          {n}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </CardContent>
             </Card>
 
@@ -954,6 +990,7 @@ export function SheetPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Footer and branding</CardTitle>
+                <CardDescription>What appears at the bottom and in the corner.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -979,15 +1016,15 @@ export function SheetPage() {
                   />
                 </label>
               </CardContent>
-              <CardFooter>
-                <Button type="button" className="w-full" disabled={saving || locked} onClick={save}>
-                  {saving ? 'Saving...' : locked ? 'Sheet locked' : 'Save and go back'}
-                </Button>
-              </CardFooter>
             </Card>
           </div>
         )}
       </div>
+      {editing && (
+        <div className="noprint fixed inset-x-0 bottom-0 z-30 grid grid-cols-2 gap-2 border-t border-[var(--line)] bg-[var(--card)] px-4 pb-[calc(10px+env(safe-area-inset-bottom,0px))] pt-2.5 min-[900px]:hidden">
+          {actions}
+        </div>
+      )}
     </>,
   );
 }

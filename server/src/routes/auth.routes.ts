@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import passport from 'passport';
 import * as c from '../controllers/auth.controller.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import { validate } from '../middleware/validate.js';
@@ -13,5 +14,10 @@ r.post('/logout', c.logout);
 r.get('/verify/:token', h(c.verify));
 r.post('/forgot', validate({ body: forgotBody }), h(c.forgot));
 r.post('/reset', validate({ body: resetBody }), h(c.reset));
+
+// Google OAuth routes
+r.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+r.get('/google/callback', h(c.googleCallback));
+
 export default r;
 

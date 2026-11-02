@@ -22,7 +22,7 @@ Client: `npm run dev` (vite), `npm run build`, `npm run typecheck`.
 Root: `npm run dev` runs both client and server concurrently.
 
 ## Environment variables (never commit values)
-Server `.env`: `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL`, `NODE_ENV`, `PORT`, `MAX_GPS_ACCURACY`, `LATE_AFTER_MINUTES`, `EARLY_CHECKIN_MINUTES`, `LINK_SESSIONS_IN_LIST`.
+Server `.env`: `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL`, `NODE_ENV`, `PORT`, `LATE_AFTER_MINUTES`, `EARLY_CHECKIN_MINUTES`, `LINK_SESSIONS_IN_LIST`.
 Client: `VITE_API_BASE` (defaults to `http://localhost:5000/api`).
 
 ## Conventions

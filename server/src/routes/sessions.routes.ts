@@ -12,8 +12,8 @@ import { asyncHandler as h } from '../utils/asyncHandler.js';
 
 const r = Router();
 
-// Participant - require auth
-r.post('/nearby', auth, nearbyLimiter, validate({ body: nearbyBody }), h(s.nearbyList));
+// Participant
+r.post('/nearby', optionalAuth, nearbyLimiter, validate({ body: nearbyBody }), h(s.nearbyList));
 
 // Creator (fixed paths first, so "mine" is never read as an :id) - require auth
 r.get('/mine', auth, validate({ query: listMineQuery }), h(s.listMine));

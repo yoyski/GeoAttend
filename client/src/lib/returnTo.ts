@@ -36,3 +36,33 @@ export function clearReturnTo() {
     /* ignore */
   }
 }
+
+/* ---------- Drafts: a form filled in before being sent to log in (used by the Create page), kept for a day ---------- */
+const DRAFT_PREFIX = 'geoattend:draft:';
+
+export function saveDraft(name: string, value: unknown) {
+  try {
+    localStorage.setItem(DRAFT_PREFIX + name, JSON.stringify({ v: value, t: Date.now() }));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function loadDraft<T>(name: string): T | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_PREFIX + name);
+    if (!raw) return null;
+    const { v, t } = JSON.parse(raw) as { v?: T; t?: number };
+    return t && Date.now() - t < 24 * 3600e3 && v ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearDraft(name: string) {
+  try {
+    localStorage.removeItem(DRAFT_PREFIX + name);
+  } catch {
+    /* ignore */
+  }
+}

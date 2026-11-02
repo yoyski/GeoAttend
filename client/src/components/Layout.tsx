@@ -1,10 +1,14 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useRequireLogin } from '../hooks/useRequireLogin';
+import { Button } from './ui/button';
 import { ThemeToggle } from './ThemeToggle';
 import { Avatar } from './Avatar';
 
 function AppHeader() {
   const auth = useAuth() as any;
+  const { goToLogin } = useRequireLogin();
+  const loggedIn = !!auth?.user;
   const name: string | undefined = auth?.user?.name ?? auth?.me?.name ?? auth?.profile?.name;
   const avatar: string | null | undefined = auth?.user?.avatar ?? auth?.me?.avatar ?? auth?.profile?.avatar;
 
@@ -22,13 +26,22 @@ function AppHeader() {
       </div>
       <div className="flex items-center gap-2.5">
         <ThemeToggle />
-        <Link
-          to="/account"
-          aria-label="Open account"
-          className="ring-2 ring-[var(--card)] transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_30%,transparent)] rounded-full"
-        >
-          <Avatar name={name} src={avatar} className="h-9 w-9 text-xs" />
-        </Link>
+        {auth?.loading ? (
+          <span className="h-9 w-9" aria-hidden="true" />
+        ) : loggedIn ? (
+          <Link
+            to="/account"
+            aria-label="Open account"
+            className="ring-2 ring-[var(--card)] transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_30%,transparent)] rounded-full"
+          >
+            <Avatar name={name} src={avatar} className="h-9 w-9 text-xs" />
+          </Link>
+        ) : (
+          <Button type="button" size="sm" onClick={() => goToLogin()}>
+            <i className="ti ti-login mr-1.5 text-[16px]" aria-hidden="true" />
+            Log in
+          </Button>
+        )}
       </div>
     </header>
   );

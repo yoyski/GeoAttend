@@ -3,12 +3,10 @@ import { User, type UserDoc } from '../models/User.js';
 import { verifyJwt } from '../utils/jwt.js';
 import { HttpError } from '../utils/httpError.js';
 
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace Express {
-    interface Request {
-      user?: UserDoc;
-    }
+// Extend Express Request to include our UserDoc type
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: UserDoc;
   }
 }
 

@@ -432,7 +432,7 @@ export function ManagePage() {
             </div>
             <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
               <MetaLine icon="ti-map-pin">
-                {s.category} at {s.venue} · {s.radius} m radius
+                {s.venue} · {s.radius} m radius
               </MetaLine>
               <MetaLine icon="ti-clock">{when(s.startsAt, s.endsAt)}</MetaLine>
               <MetaLine icon="ti-shield-check">{TYPE_LABEL[s.verification] ?? s.verification}</MetaLine>
@@ -858,7 +858,7 @@ function EditView({
               <input
                 id="edit-radius"
                 type="range"
-                min={20}
+                min={1}
                 max={400}
                 value={f.radius}
                 onChange={(e) => setF({ ...f, radius: Number(e.target.value) })}

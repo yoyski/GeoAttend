@@ -1,10 +1,12 @@
 import bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
+import passport from 'passport';
 import { User } from '../models/User.js';
 import { userDto } from '../services/me.service.js';
 import { generateToken, hashToken } from '../utils/tokens.js';
 import { signJwt } from '../utils/jwt.js';
 import { HttpError } from '../utils/httpError.js';
+import { env } from '../config/env.js';
 
 export const register = async (req: Request, res: Response) => {
   const { name, email, password } = req.body as { name: string; email: string; password: string };
@@ -39,7 +41,16 @@ export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body as { email: string; password: string };
 
   const user = await User.findOne({ email });
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+  if (!user) {
+    throw new HttpError(401, 'UNAUTHENTICATED', 'Invalid email or password.');
+  }
+
+  // Check if user registered with OAuth
+  if (user.authProvider === 'google' && !user.passwordHash) {
+    throw new HttpError(401, 'UNAUTHENTICATED', 'This account uses Google sign-in. Please use "Sign in with Google".');
+  }
+
+  if (!user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
     throw new HttpError(401, 'UNAUTHENTICATED', 'Invalid email or password.');
   }
 
@@ -149,4 +160,26 @@ export const reset = async (req: Request, res: Response) => {
       user: userDto(user),
     },
   });
+};
+
+export const googleCallback = async (req: Request, res: Response) => {
+  passport.authenticate('google', { session: false }, (err: Error, user: any) => {
+    if (err || !user) {
+      return res.redirect(`${env.CLIENT_URL}/auth?error=oauth_failed`);
+    }
+
+    const token = signJwt(user);
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Check for returnTo state parameter (for future enhancement)
+    // For now, always redirect to /attend
+    // The client-side returnTo localStorage will handle redirects after login
+    res.redirect(`${env.CLIENT_URL}/attend`);
+  })(req, res);
 };

@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sessionsApi } from '../api/endpoints';
 import { ApiError } from '../api/client';
@@ -11,13 +11,14 @@ import { Label } from '../components/ui/label';
 // Kept from the custom kit
 import { ErrorBox, PageHeading, toLocalInput } from '../components/modern';
 import { useLocationCtx } from '../hooks/useLocation';
+import { useRequireLogin } from '../hooks/useRequireLogin';
+import { clearDraft, loadDraft, saveDraft } from '../lib/returnTo';
 import type { Verification } from '../types';
 
-const VERIFY: Record<Verification, { tile: string; title: string; hint: string; icon: ReactNode }> = {
+const VERIFY: Record<Verification, { tile: string; title: string; icon: ReactNode }> = {
   location: {
     tile: 'Location',
     title: 'Location only',
-    hint: 'Card appears inside the radius',
     icon: (
       <>
         <path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z" />
@@ -28,7 +29,6 @@ const VERIFY: Record<Verification, { tile: string; title: string; hint: string; 
   passcode: {
     tile: 'Passcode',
     title: 'Location + passcode',
-    hint: 'Inside the radius, then enter a passcode',
     icon: (
       <>
         <rect x="5" y="11" width="14" height="9" rx="2" />
@@ -39,7 +39,6 @@ const VERIFY: Record<Verification, { tile: string; title: string; hint: string; 
   email: {
     tile: 'Emails',
     title: 'Location + emails',
-    hint: 'Inside the radius, with an authorized email',
     icon: (
       <>
         <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -64,57 +63,21 @@ const strength = (p: string) => (p.length >= 10 ? 'Strong' : p.length >= 6 ? 'Go
 const mut = { color: 'var(--mut)' } as const;
 const dateCls = '[color-scheme:light_dark] min-w-0 text-[13px] min-[480px]:text-base';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_R = 1;
+const MIN_R = 1; // minimum radius
 const MAX_R = 400;
-
-const osm = (lat: number, lng: number) =>
-  `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=18/${lat}/${lng}`;
-
-/** Segmented control built from Button variants. */
-function Segmented<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  options: { value: T; label: string }[];
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div
-      className="mt-2 grid gap-2"
-      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
-      role="radiogroup"
-      aria-label={label}
-    >
-      {options.map((o) => (
-        <Button
-          key={o.value}
-          type="button"
-          size="sm"
-          role="radio"
-          aria-checked={value === o.value}
-          variant={value === o.value ? 'default' : 'outline'}
-          onClick={() => onChange(o.value)}
-        >
-          {o.label}
-        </Button>
-      ))}
-    </div>
-  );
-}
 
 export function CreatePage() {
   const { fix } = useLocationCtx();
   const nav = useNavigate();
+  const { user, loading: authLoading, goToLogin } = useRequireLogin();
+  // Answers typed before being sent to log in come back after login.
+  const [restored, setRestored] = useState(false);
 
   const [f, setF] = useState(() => {
     const now = new Date();
     const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59);
     const end = new Date(Math.min(now.getTime() + 2 * 3600_000, endOfDay.getTime()));
-    return {
+    const base = {
       title: '',
       venue: '',
       dt: toLocalInput(now).slice(0, 10),
@@ -128,7 +91,26 @@ export function CreatePage() {
       emails: [] as string[],
       lateAfterTime: '', // HH:MM format
     };
+    const draft = loadDraft<Partial<typeof base>>('create');
+    return draft ? { ...base, ...draft } : base;
   });
+  const booted = useRef(false);
+  useEffect(() => {
+    if (booted.current) return; // React strict mode runs effects twice in dev
+    booted.current = true;
+    if (loadDraft('create')) {
+      // Coming back from the sheet designer or from logging in: the typed answers are restored once.
+      setRestored(true);
+      clearDraft('create');
+    } else {
+      // A brand-new session starts with a fresh sheet design, not the one left from an abandoned attempt.
+      try {
+        localStorage.removeItem('geoattend:sheet:preview');
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
   const [emailDraft, setEmailDraft] = useState('');
   const [emailErr, setEmailErr] = useState('');
   const [error, setError] = useState<ApiError | null>(null);
@@ -170,6 +152,14 @@ export function CreatePage() {
     if (f.verification === 'passcode' && f.passcode.length < 6) return fail('Passcode needs at least 6 characters.');
     if (f.verification === 'email' && f.emails.length === 0) return fail('Add at least one authorized email.');
 
+    // Publishing needs an account. Keep what was typed, send them to log in, and bring them back here.
+    if (authLoading) return;
+    if (!user) {
+      saveDraft('create', f);
+      goToLogin('/create');
+      return;
+    }
+
     setBusy(true);
     try {
       const res = await sessionsApi.create({
@@ -186,6 +176,17 @@ export function CreatePage() {
         ...(f.verification === 'passcode' ? { passcode: f.passcode } : {}),
         ...(f.verification === 'email' ? { allowedEmails: f.emails } : {}),
       });
+      clearDraft('create');
+      // The sheet designed before publishing belongs to the new session now.
+      try {
+        const design = localStorage.getItem('geoattend:sheet:preview');
+        if (design) {
+          localStorage.setItem(`geoattend:sheet:${res.session.id}`, design);
+          localStorage.removeItem('geoattend:sheet:preview');
+        }
+      } catch {
+        /* ignore */
+      }
       // After publishing, go straight to the session dashboard.
       nav(`/manage/${res.session.id}`, {
         state: {
@@ -200,11 +201,34 @@ export function CreatePage() {
     }
   };
 
-  const v = VERIFY[f.verification];
+  /** Keep what was typed (the page unmounts), and hand the session details to the sheet designer. */
+  const openSheetDesigner = () => {
+    saveDraft('create', f);
+    const a = new Date(`${f.dt}T${f.ts}`);
+    const b = new Date(`${f.dt}T${f.te}`);
+    const valid = !Number.isNaN(a.getTime()) && !Number.isNaN(b.getTime());
+    nav('/manage/preview/sheet', {
+      state: {
+        prefill: {
+          title: f.title.trim(),
+          venue: f.venue.trim(),
+          startsAt: (valid ? a : new Date()).toISOString(),
+          endsAt: (valid ? b : new Date()).toISOString(),
+        },
+      },
+    });
+  };
 
   return (
     <form onSubmit={submit} noValidate>
       <PageHeading title="New session" sub="Location is always required" />
+
+      {restored && user && (
+        <p className="mt-4 flex items-start gap-2 rounded-xl bg-[var(--tint)] px-3 py-2.5 text-[13px] font-medium text-[var(--pine)]" role="status">
+          <i className="ti ti-circle-check mt-0.5" aria-hidden="true" />
+          Welcome back. Your details are saved. Press Publish when you are ready.
+        </p>
+      )}
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2 lg:items-start">
         {/* ---------- Details ---------- */}
@@ -224,8 +248,8 @@ export function CreatePage() {
               <Input id="c-venue" value={f.venue} onChange={(e) => set('venue', e.target.value)} placeholder="e.g. Main hall" />
             </div>
 
-            <div className="grid grid-cols-[1.3fr_1fr_1fr] items-end gap-2 min-[480px]:gap-3">
-              <div className="min-w-0 space-y-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 min-w-0 space-y-2">
                 <Label htmlFor="c-date">Date</Label>
                 <Input id="c-date" type="date" className={dateCls} value={f.dt} onChange={(e) => set('dt', e.target.value)} />
               </div>
@@ -238,6 +262,20 @@ export function CreatePage() {
                 <Input id="c-end" type="time" className={dateCls} value={f.te} onChange={(e) => set('te', e.target.value)} />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lateTime">Mark late after (optional)</Label>
+              <Input
+                id="lateTime"
+                type="time"
+                className={dateCls}
+                value={f.lateAfterTime}
+                onChange={(e) => set('lateAfterTime', e.target.value)}
+              />
+              <p className="text-[13px]" style={mut}>
+                Check-ins after this time are marked late. Leave empty to skip.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -246,7 +284,7 @@ export function CreatePage() {
           <CardHeader>
             <CardTitle>Location</CardTitle>
             <CardDescription>
-              Click or drag on the map to place your venue pin. Use "Use my location" to center on your GPS position.
+              Click or drag the map to place the venue pin.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -264,8 +302,9 @@ export function CreatePage() {
             </div>
 
             <div className="mt-3 flex items-center justify-between gap-2">
-              <span className="min-w-0 truncate text-[12px] min-[480px]:text-[13px]" style={mut}>
-                {f.lat.toFixed(5)}, {f.lng.toFixed(5)} · {f.radius} m
+              <span className="min-w-0 truncate text-[12px] min-[480px]:text-[13px]" style={mut} title={`Venue: ${f.lat.toFixed(5)}, ${f.lng.toFixed(5)}${fix ? ` | GPS: ${fix.lat.toFixed(5)}, ${fix.lng.toFixed(5)}` : ' | GPS: waiting...'}`}>
+                Venue: {f.lat.toFixed(5)}, {f.lng.toFixed(5)} · {f.radius} m
+                {fix && <span className="ml-2 text-[var(--ok)]">📍 GPS: {fix.lat.toFixed(5)}, {fix.lng.toFixed(5)}</span>}
               </span>
               <Button type="button" variant="outline" size="sm" onClick={centerOnMe} disabled={!fix}>
                 <i className="ti ti-current-location mr-1.5 text-[16px]" aria-hidden="true" />
@@ -287,19 +326,6 @@ export function CreatePage() {
                 aria-label="Check-in radius in metres"
                 className="w-full accent-[var(--sig)]"
                 onChange={(e) => set('radius', Number(e.target.value))}
-              />
-            </div>
-
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="lateTime">Consider late after (optional)</Label>
-              <p className="text-[13px]" style={mut}>
-                Set a specific time. Check-ins after this will be flagged as late. Leave empty to not track lateness.
-              </p>
-              <Input
-                id="lateTime"
-                type="time"
-                value={f.lateAfterTime}
-                onChange={(e) => set('lateAfterTime', e.target.value)}
               />
             </div>
           </CardContent>
@@ -355,10 +381,6 @@ export function CreatePage() {
                   );
                 })}
               </div>
-              <p className="mt-3 text-[13px]" style={mut}>
-                <b style={{ color: 'var(--ink)' }}>{v.title}:</b> {v.hint}
-              </p>
-
               {f.verification === 'location' && (
                 <div className="mt-4 rounded-xl p-3.5" style={{ background: 'var(--tint)' }}>
                   <p className="text-sm font-bold">Publishes automatically</p>
@@ -449,35 +471,21 @@ export function CreatePage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Share link</CardTitle>
-              <CardDescription>A shareable link and QR code are generated for all sessions.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-[13px]" style={mut}>
-                After publishing, you can copy the link or show the QR code to help people find the session easily.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Printable sheet</CardTitle>
-              <CardDescription>Preview and edit how the printed attendance sheet looks.</CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Button type="button" variant="outline" className="w-full" onClick={() => nav(`/manage/preview/sheet`)}>
-                <i className="ti ti-file-text mr-2 text-[18px]" aria-hidden="true" />
-                Preview and edit sheet
-              </Button>
-            </CardFooter>
-          </Card>
-
-          <div>
+          <div className="space-y-3">
+            <Button type="button" variant="outline" className="w-full" onClick={openSheetDesigner}>
+              <i className="ti ti-file-text mr-2 text-[18px]" aria-hidden="true" />
+              Design the attendance sheet
+              <span className="ml-1.5 font-normal text-[var(--mut)]">(optional)</span>
+            </Button>
             <Button type="submit" size="lg" disabled={busy} className="w-full">
               {busy ? 'Publishing...' : f.verification === 'location' ? 'Publish now' : 'Publish session'}
             </Button>
+            <p className="text-center text-[13px]" style={mut}>
+              {!authLoading && !user
+                ? 'You will be asked to log in when you publish. Your answers are kept. '
+                : ''}
+              You get a share link and QR code right after publishing.
+            </p>
             <ErrorBox error={error} />
           </div>
         </div>

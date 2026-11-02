@@ -1,4 +1,3 @@
-import { env } from '../config/env.js';
 import { CheckIn } from '../models/CheckIn.js';
 import { Session } from '../models/Session.js';
 import type { UserDoc } from '../models/User.js';
@@ -7,7 +6,7 @@ import { haversine } from '../utils/haversine.js';
 import { HttpError } from '../utils/httpError.js';
 import { recordDto } from './dto.js';
 import { liveHub } from './live.service.js';
-import { assertAccuracy, notHere } from './nearby.service.js';
+import { notHere } from './nearby.service.js';
 
 export interface CheckInInput {
   lat: number;
@@ -21,10 +20,7 @@ export interface CheckInInput {
 
 /** The single source of truth for check-in rules. Order matters. */
 export async function checkIn(user: UserDoc, sessionId: string, input: CheckInInput) {
-  // 1. GPS quality
-  assertAccuracy(input.accuracy);
-
-  // 2. session exists and is open
+  // 1. session exists and is open
   const s = await Session.findById(sessionId);
   if (!s) throw notHere();
   if (s.status !== 'Open') throw new HttpError(409, 'SESSION_CLOSED', 'This session is not open for check-in.');
@@ -35,11 +31,11 @@ export async function checkIn(user: UserDoc, sessionId: string, input: CheckInIn
     throw new HttpError(409, 'OUTSIDE_TIME_WINDOW', 'Check-in is not open at this time.');
   }
 
-  // 3. location (computed here from raw coordinates, never trusted from the client)
+  // 2. location (computed here from raw coordinates, never trusted from the client)
   const distance = haversine(input.lat, input.lng, s.location!.coordinates[1]!, s.location!.coordinates[0]!);
   if (distance > s.radius) throw notHere();
 
-  // 4. the one extra verification chosen by the creator
+  // 3. the one extra verification chosen by the creator
   // Note: All sessions have a linkToken for sharing, but it's no longer a verification type
   if (s.verification === 'passcode') {
     if (!input.passcode || !s.passcodeHash || !verifySecret(input.passcode, s.passcodeHash)) {
@@ -51,10 +47,10 @@ export async function checkIn(user: UserDoc, sessionId: string, input: CheckInIn
     }
   }
 
-  // 5. late flag - use session's lateAfterTime if set
+  // 4. late flag - use session's lateAfterTime if set
   const late = s.lateAfterTime ? now.getTime() > s.lateAfterTime.getTime() : false;
 
-  // 6. record it; the unique (session, user) index blocks duplicates at the database level
+  // 5. record it; the unique (session, user) index blocks duplicates at the database level
   let record;
   try {
     record = await CheckIn.create({
@@ -86,7 +82,7 @@ export async function checkIn(user: UserDoc, sessionId: string, input: CheckInIn
     }
   }
 
-  // 7. tell the creator's live view
+  // 6. tell the creator's live view
   const dto = recordDto(record);
   liveHub.publish(s.id, 'checkin', dto);
   return dto;

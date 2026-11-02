@@ -9,7 +9,7 @@ export const sessionsApi = {
   nearby: (fix: Fix) => api<ParticipantSession[]>('post', '/sessions/nearby', { data: fix }),
   detail: (id: string, fix: Fix, t?: string) =>
     api<ParticipantSession>('get', `/sessions/${id}`, { params: { ...fix, ...(t ? { t } : {}) } }),
-  checkIn: (id: string, fix: Fix, extra: { passcode?: string; token?: string }) =>
+  checkIn: (id: string, fix: Fix, extra: { passcode?: string; token?: string; customFields?: Record<string, string>; signature?: string }) =>
     api<RecordRow>('post', `/sessions/${id}/check-in`, { data: { ...fix, ...extra } }),
   // creator
   create: (input: SessionInput) =>

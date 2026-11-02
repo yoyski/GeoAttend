@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { meApi, sessionsApi } from '../api/endpoints';
 import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
 // Kept from the custom kit: GeoAttend-specific pieces with no shadcn equivalent.
 import { PageHeading, StatusChip } from '../components/modern';
 import { useAsync } from '../hooks/useAsync';
 import { useLocationCtx } from '../hooks/useLocation';
+import { useRequireLogin } from '../hooks/useRequireLogin';
 import type { Fix } from '../types';
 
 const tabCls = (on: boolean) =>
@@ -91,6 +93,7 @@ function ErrorCard({ error }: { error: unknown }) {
 export function AttendPage() {
   const [tab, setTab] = useState<'sessions' | 'history'>('sessions');
   const { fix, gpsError } = useLocationCtx();
+  const { user, loading: authLoading, goToLogin } = useRequireLogin();
 
   // The position used for the nearby search. It only moves when you have moved 20 m or more
   // (or GPS accuracy became usable), so GPS jitter never clears the list or refetches.
@@ -107,7 +110,11 @@ export function AttendPage() {
     [anchor?.lat, anchor?.lng, anchor?.accuracy, tab],
   );
 
-  const history = useAsync(() => (tab === 'history' ? meApi.history() : Promise.resolve(null)), [tab]);
+  // History belongs to an account: logged-out visitors get a log-in prompt instead of a failing request.
+  const history = useAsync(
+    () => (tab === 'history' && user ? meApi.history() : Promise.resolve(null)),
+    [tab, !!user],
+  );
 
   const noneHere = tab === 'sessions' && !!fix && !nearby.error && !!nearby.data && nearby.data.length === 0;
 
@@ -117,6 +124,19 @@ export function AttendPage() {
         title="Attend"
         sub={tab === 'history' && history.data ? `${history.data.history.length} recent check-ins` : 'Sessions you can join'}
       />
+
+      {/* GPS Status Indicator */}
+      {!fix && (
+        <div className="mb-4 rounded-xl bg-[var(--tint)] px-3 py-2.5 text-[13px]" style={mut}>
+          <strong>GPS Status:</strong> {gpsError || 'Requesting location permission...'}
+          {!gpsError && <span className="ml-2">Please allow location access when prompted.</span>}
+        </div>
+      )}
+      {fix && (
+        <div className="mb-4 rounded-xl bg-[var(--okt)] px-3 py-2.5 text-[13px] text-[var(--ok)]">
+          <strong>✓ GPS Active:</strong> {fix.lat.toFixed(5)}, {fix.lng.toFixed(5)} (±{Math.round(fix.accuracy)}m)
+        </div>
+      )}
 
       {/* Tabs (no shadcn Tabs primitive installed, so styled to match) */}
       <div className="mb-4 inline-flex gap-1 rounded-full bg-[var(--field)] p-1" role="tablist">
@@ -222,7 +242,19 @@ export function AttendPage() {
           </>
         )}
 
-        {tab === 'history' && (
+        {tab === 'history' && !authLoading && !user && (
+          <Notice title="Log in to see your history">
+            <p className="text-sm" style={mut}>
+              Your check-ins are saved to your account. Log in or register to see where you have been.
+            </p>
+            <Button type="button" className="mt-4 w-full sm:w-auto" onClick={() => goToLogin()}>
+              <i className="ti ti-login mr-1.5 text-[16px]" aria-hidden="true" />
+              Log in or register
+            </Button>
+          </Notice>
+        )}
+
+        {tab === 'history' && user && (
           <>
             <ErrorCard error={history.error} />
 

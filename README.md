@@ -10,6 +10,7 @@ GeoAttend is a full-stack web application that enables location-verified check-i
 - **Location-verified check-ins** - Check in only when inside the designated radius
 - **Multiple verification methods** - Location-only, passcode, or email whitelist
 - **Real-time session discovery** - Automatically see nearby active sessions
+- **Google OAuth sign-in** - Quick registration and login with Google account
 - **Check-in history** - Track your attendance across all sessions
 - **Mobile-friendly** - Optimized for smartphone use
 
@@ -38,6 +39,7 @@ GeoAttend is a full-stack web application that enables location-verified check-i
 - **Mongoose** 8 - MongoDB ODM with 2dsphere indexing
 - **JWT** - httpOnly cookie-based authentication
 - **bcrypt** - Password hashing
+- **Passport.js** - Authentication middleware with Google OAuth 2.0
 - **Zod** - Runtime validation
 - **Helmet** - Security headers
 - **express-rate-limit** - API rate limiting
@@ -120,7 +122,14 @@ geoattend/
    MAX_GPS_ACCURACY=100
    LATE_AFTER_MINUTES=10
    EARLY_CHECKIN_MINUTES=15
+
+   # Google OAuth (optional)
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
    ```
+
+   **Google OAuth Setup (Optional):**
+   If you want to enable "Sign in with Google", follow the [Google OAuth Setup Guide](./GOOGLE_OAUTH_SETUP.md) to get your credentials and configure authorized redirect URIs.
 
    Optional - Create `client/.env`:
    ```env
@@ -171,6 +180,7 @@ npm start
 ## 🔐 Security Features
 
 - JWT stored in httpOnly, Secure, SameSite=Lax cookies
+- Google OAuth 2.0 authentication with automatic account linking
 - Passwords hashed with bcrypt (cost 12)
 - Email verification tokens (SHA-256 hashed, 24h expiry)
 - Password reset tokens (SHA-256 hashed, 30min expiry)

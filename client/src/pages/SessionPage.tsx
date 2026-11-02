@@ -111,6 +111,8 @@ export function SessionPage() {
 
   const checkIn = async () => {
     if (!fix) return;
+    // Looking is free. Checking in needs an account: log in, then come straight back here.
+    if (!user) return goToAuth();
     setBusy(true);
     setError(null);
     try {
@@ -242,7 +244,6 @@ export function SessionPage() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <Pill icon="ti-map-pin">{s.venue}</Pill>
                 <Pill icon="ti-clock">{range(s.startsAt, s.endsAt)}</Pill>
-                <Pill icon="ti-category">{s.category}</Pill>
               </div>
             </header>
 
@@ -333,14 +334,18 @@ export function SessionPage() {
                     </p>
                   )}
 
-                  <div className="space-y-2">
-                    <Label>Signature</Label>
-                    <SignaturePad
-                      value={customFields['_signature'] || ''}
-                      onChange={(dataUrl) => setCustomFields({ ...customFields, _signature: dataUrl })}
-                    />
-                  </div>
+                  {/* Built-in signature column - only show if enabled in sheet */}
+                  {s.sheet?.cols?.find((c: { k: string; on: number }) => c.k === 'sign' && c.on === 1) && (
+                    <div className="space-y-2">
+                      <Label>Signature</Label>
+                      <SignaturePad
+                        value={customFields['_signature'] || ''}
+                        onChange={(dataUrl) => setCustomFields({ ...customFields, _signature: dataUrl })}
+                      />
+                    </div>
+                  )}
 
+                  {/* Custom columns configured by creator */}
                   {s.sheet?.cols
                     ?.filter((c: { k: string; on: number }) => c.k === 'custom' && c.on === 1)
                     .map((c: { id: string; l: string; inputType?: string }) => (
@@ -375,7 +380,7 @@ export function SessionPage() {
                 <CardFooter>
                   <Button type="button" size="lg" className="w-full" onClick={checkIn} disabled={busy}>
                     <i className={`ti ${busy ? 'ti-loader-2 animate-spin' : 'ti-map-pin-check'} text-[20px]`} aria-hidden="true" />
-                    {busy ? 'Checking in…' : 'Check in now'}
+                    {busy ? 'Checking in…' : user ? 'Check in now' : 'Log in to check in'}
                   </Button>
                 </CardFooter>
               </Card>
