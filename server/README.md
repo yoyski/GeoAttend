@@ -12,10 +12,7 @@ npm install -D @types/cors
 
 # 2. Make sure MongoDB is running (local) or put your Atlas URI in .env (MONGODB_URI)
 
-# 3. Optional demo data (3 users, 4 sessions near Manila)
-npm run seed
-
-# 4. Start
+# 3. Start
 npm run dev          # http://localhost:5000
 npm test             # unit tests (distance, hashing, CSV)
 npm run typecheck
@@ -100,6 +97,6 @@ src/
   routes/ controllers/     thin HTTP layer
   services/                business rules: checkIn, nearby, session, record, me, live (SSE)
   utils/                   haversine, hash (scrypt), tokens, csv (+ unit tests)
-  scripts/seed.ts          demo data
+  scripts/                 migration scripts
 requests.http              sample requests (VS Code REST Client)
 ```

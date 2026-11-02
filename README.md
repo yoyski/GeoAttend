@@ -77,7 +77,7 @@ geoattend/
 │   │   ├── services/      # Business logic
 │   │   ├── middleware/    # Auth, validation, rate limiting
 │   │   ├── utils/         # Helper functions
-│   │   └── scripts/       # Seed data and migrations
+│   │   └── scripts/       # Migration scripts
 │   └── package.json
 └── package.json           # Root scripts
 ```
@@ -135,19 +135,6 @@ geoattend/
    ```env
    VITE_API_BASE=http://localhost:5000/api
    ```
-
-4. **Seed demo data (optional)**
-   ```bash
-   cd server
-   npm run build
-   node dist/scripts/seed.js
-   cd ..
-   ```
-
-   This creates:
-   - 3 test users (alex@example.com, maria@example.com, ben@example.com)
-   - 4 demo sessions including one with 55 check-ins
-   - Default password: `Password123`
 
 ### Development
 

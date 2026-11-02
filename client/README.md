@@ -21,13 +21,13 @@ Start the server first (`npm run dev` in the server folder). In the **server** `
 `CLIENT_URL=http://localhost:3000` so share links point at this client.
 
 ## How to test
-1. **Account page**: pick a mock user (alex = creator of the seeded sessions, maria, ben). This sets the `x-mock-user` header.
-2. **Attend page**: the yellow box is a *test location*. Pick a preset venue (the seeded ones) or type lat/lng/accuracy,
-   then "Sessions here" lists only sessions you are inside the radius of. "Far away" shows the empty state.
-   Switch to **Real GPS** to use your browser location (needs localhost or https).
-3. **Open a session** and check in. Try: accuracy 250 (GPS_TOO_WEAK), wrong passcode (seed passcode is 1234),
-   a user not on the email list, the link session without its link token, checking in twice.
-4. **Create / My sessions / Manage**: publish with each verification type, edit (rules lock after the first check-in),
+1. **Account page**: Create a new account or log in with Google OAuth.
+2. **Attend page**: Use the yellow box as a *test location*. Enter lat/lng/accuracy coordinates,
+   hit **"Sessions here"** to list sessions within radius. **"Far away"** shows the empty state.
+   Switch to **Real GPS** to use your browser location (needs localhost or HTTPS).
+3. **Open a session** and check in. Try different scenarios: high accuracy values, wrong passcode,
+   checking in twice to test validation.
+4. **Create / My sessions / Manage**: Create sessions with each verification type, edit sessions (note: some fields lock after the first check-in),
    open/close/cancel/duplicate/delete, add a manual attendee, see the absent list (email sessions), download CSV,
    watch records arrive live while another browser profile checks in.
 5. **Printable sheet** (Manage > Printable sheet): edit title/columns/rows, save the design to the server, print.
