@@ -142,10 +142,16 @@ export function AccountPage() {
         window.location.href = '/';
       });
     } else if (which === 'signout') {
-      void run(async () => {
-        await authApi.logout();
-        window.location.href = '/';
-      });
+      // Don't use run() for signout to avoid reload issues
+      void (async () => {
+        try {
+          await authApi.logout();
+          window.location.href = '/';
+        } catch (err) {
+          console.error('Logout failed:', err);
+          window.location.href = '/';
+        }
+      })();
     }
   };
 
