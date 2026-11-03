@@ -13,6 +13,8 @@ export const patch = async (req: Request, res: Response) =>
 
 export const remove = async (req: Request, res: Response) => {
   await me.deleteMe(currentUser(req));
+  // Clear the authentication cookie
+  res.clearCookie('token');
   res.status(204).end();
 };
 

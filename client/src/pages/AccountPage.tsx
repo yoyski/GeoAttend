@@ -137,7 +137,9 @@ export function AccountPage() {
     if (which === 'delete') {
       void run(async () => {
         await meApi.remove();
-        setMessage('Account deleted');
+        // After deleting account, logout and redirect to home
+        await authApi.logout();
+        window.location.href = '/';
       });
     } else if (which === 'signout') {
       void run(async () => {
