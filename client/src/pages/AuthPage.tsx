@@ -5,8 +5,27 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+// Helper to handle Google OAuth on both web and mobile
+const handleGoogleLogin = async () => {
+  const isNative = Capacitor.isNativePlatform();
+  const googleUrl = `${API_URL}/auth/google`;
+
+  if (isNative) {
+    // On mobile, use Capacitor Browser to open OAuth in-app
+    await Browser.open({
+      url: googleUrl,
+      windowName: '_self'
+    });
+  } else {
+    // On web, use normal redirect
+    window.location.href = googleUrl;
+  }
+};
 
 
 /* Where to return after logging in. Stored in localStorage so it survives the email-verification step. */
@@ -199,7 +218,7 @@ export function AuthPage() {
                   type="button"
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2"
-                  onClick={() => window.location.href = `${API_URL}/auth/google`}
+                  onClick={handleGoogleLogin}
                 >
                   <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
                     <path
@@ -271,7 +290,7 @@ export function AuthPage() {
                   type="button"
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2"
-                  onClick={() => window.location.href = `${API_URL}/auth/google`}
+                  onClick={handleGoogleLogin}
                 >
                   <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
                     <path
