@@ -455,7 +455,7 @@ export function SheetPage() {
             </div>
           )}
           {cfg.qr === 1 && (
-            <div style={{ width: 64, marginLeft: 14 }}>
+            <div className="w-16 ml-3.5 shrink-0">
               <QRCodeSVG value={link} size={64} style={{ display: 'block', width: '100%', height: 'auto' }} />
               <div style={{ fontSize: 8, textAlign: 'center', color: '#6B7280', marginTop: 2 }}>Scan to check in</div>
             </div>
@@ -604,23 +604,23 @@ export function SheetPage() {
   const printPortal =
     printTick > 0
       ? createPortal(
-          <div id="sheet-print-root">{Array.from({ length: totalPages }, (_, n) => renderPage(n, 'print'))}</div>,
-          document.body,
-        )
+        <div id="sheet-print-root">{Array.from({ length: totalPages }, (_, n) => renderPage(n, 'print'))}</div>,
+        document.body,
+      )
       : null;
   /** All pages at real size, for the PDF download (ManagePage captures each .sheet inside #pdf-root). */
   const pdfPortal = pdfMode
     ? createPortal(
-        <div
-          id="pdf-root"
-          data-mm-w={toMm(pageW)}
-          data-mm-h={toMm(pageH)}
-          style={{ position: 'absolute', left: 0, top: 0, width: W, background: '#fff' }}
-        >
-          {Array.from({ length: totalPages }, (_, n) => renderPage(n, 'pdf'))}
-        </div>,
-        document.body,
-      )
+      <div
+        id="pdf-root"
+        data-mm-w={toMm(pageW)}
+        data-mm-h={toMm(pageH)}
+        style={{ position: 'absolute', left: 0, top: 0, width: W, background: '#fff' }}
+      >
+        {Array.from({ length: totalPages }, (_, n) => renderPage(n, 'pdf'))}
+      </div>,
+      document.body,
+    )
     : null;
 
   /** Print and Save sit in the page header on wide screens and in a bar fixed to the bottom on phones. */
