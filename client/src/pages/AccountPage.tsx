@@ -17,6 +17,7 @@ import { Label } from '../components/ui/label';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
 import { Avatar } from '../components/Avatar';
+import { AvatarPicker } from '../components/AvatarPicker';
 import { ErrorBox, PageHeading } from '../components/modern';
 import { fileToAvatar } from '../lib/image';
 import { useAsync } from '../hooks/useAsync';
@@ -80,6 +81,7 @@ export function AccountPage() {
   const [error, setError] = useState<ApiError | null>(null);
   const [dlg, setDlg] = useState<Dlg>(null);
   const [uploading, setUploading] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -246,13 +248,34 @@ export function AccountPage() {
                 />
               </div>
               {d.avatar && (
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    disabled={uploading}
+                    onClick={() => setShowAvatarPicker(true)}
+                    className="text-xs font-semibold text-[var(--pine)] hover:underline"
+                  >
+                    Choose avatar
+                  </button>
+                  <span className="text-xs text-[var(--line)]">•</span>
+                  <button
+                    type="button"
+                    disabled={uploading}
+                    onClick={() => void run(() => meApi.patch({ avatar: null }), 'Profile photo removed')}
+                    className="text-xs font-semibold text-[var(--mut)] hover:text-[var(--err)] hover:underline"
+                  >
+                    Remove photo
+                  </button>
+                </div>
+              )}
+              {!d.avatar && (
                 <button
                   type="button"
                   disabled={uploading}
-                  onClick={() => void run(() => meApi.patch({ avatar: null }), 'Profile photo removed')}
-                  className="mt-2 text-xs font-semibold text-[var(--mut)] hover:text-[var(--err)] hover:underline"
+                  onClick={() => setShowAvatarPicker(true)}
+                  className="mt-2 text-xs font-semibold text-[var(--pine)] hover:underline"
                 >
-                  Remove photo
+                  Choose avatar
                 </button>
               )}
               <h2 className="mt-3 truncate text-xl font-bold">{d.name}</h2>
@@ -415,6 +438,14 @@ export function AccountPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Avatar Picker */}
+      <AvatarPicker
+        open={showAvatarPicker}
+        onClose={() => setShowAvatarPicker(false)}
+        onSelect={(avatarUrl) => void run(() => meApi.patch({ avatar: avatarUrl }), 'Profile photo updated')}
+        currentAvatar={d?.avatar}
+      />
     </div>
   );
 }

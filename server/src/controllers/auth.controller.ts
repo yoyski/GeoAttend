@@ -7,6 +7,7 @@ import { generateToken, hashToken } from '../utils/tokens.js';
 import { signJwt } from '../utils/jwt.js';
 import { HttpError } from '../utils/httpError.js';
 import { env } from '../config/env.js';
+import { getRandomAvatar } from '../utils/avatar.js';
 
 export const register = async (req: Request, res: Response) => {
   const { name, email, password } = req.body as { name: string; email: string; password: string };
@@ -26,6 +27,7 @@ export const register = async (req: Request, res: Response) => {
     verified: false,
     verificationToken: verificationTokenHash,
     verificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+    avatar: getRandomAvatar(), // Assign random avatar on registration
   });
 
   res.status(201).json({
