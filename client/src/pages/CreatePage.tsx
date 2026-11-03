@@ -301,12 +301,12 @@ export function CreatePage() {
               </div>
             </div>
 
-            <div className="mt-3 flex items-center justify-between gap-2">
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <span className="min-w-0 truncate text-[12px] min-[480px]:text-[13px]" style={mut} title={`Venue: ${f.lat.toFixed(5)}, ${f.lng.toFixed(5)}${fix ? ` | GPS: ${fix.lat.toFixed(5)}, ${fix.lng.toFixed(5)}` : ' | GPS: waiting...'}`}>
                 Venue: {f.lat.toFixed(5)}, {f.lng.toFixed(5)} · {f.radius} m
-                {fix && <span className="ml-2 text-[var(--ok)]">📍 GPS: {fix.lat.toFixed(5)}, {fix.lng.toFixed(5)}</span>}
+                {fix && <span className="ml-2 text-[var(--ok)] block sm:inline mt-1 sm:mt-0">📍 GPS: {fix.lat.toFixed(5)}, {fix.lng.toFixed(5)}</span>}
               </span>
-              <Button type="button" variant="outline" size="sm" onClick={centerOnMe} disabled={!fix}>
+              <Button type="button" variant="outline" size="sm" onClick={centerOnMe} disabled={!fix} className="whitespace-nowrap">
                 <i className="ti ti-current-location mr-1.5 text-[16px]" aria-hidden="true" />
                 Use my location
               </Button>
@@ -403,11 +403,11 @@ export function CreatePage() {
                     aria-label="Passcode"
                     onChange={(e) => set('passcode', e.target.value)}
                   />
-                  <div className="mt-2.5 flex items-center justify-between">
+                  <div className="mt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <Badge variant={f.passcode.length < 6 ? 'destructive' : 'default'} showDot>
                       {strength(f.passcode)}
                     </Badge>
-                    <Button type="button" variant="outline" size="sm" onClick={() => set('passcode', genPasscode())}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => set('passcode', genPasscode())} className="whitespace-nowrap">
                       <i className="ti ti-refresh mr-1.5 text-[16px]" aria-hidden="true" />
                       Generate new
                     </Button>
@@ -421,7 +421,7 @@ export function CreatePage() {
                   <p className="mt-1 text-[13px]" style={mut}>
                     Add the emails that can see the attendance card. They must also be inside the radius.
                   </p>
-                  <div className="mt-2.5 flex items-center gap-2">
+                  <div className="mt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Input
                       type="email"
                       placeholder="name@school.edu"
@@ -434,8 +434,9 @@ export function CreatePage() {
                           addEmails();
                         }
                       }}
+                      className="flex-1"
                     />
-                    <Button type="button" variant="outline" size="sm" onClick={addEmails}>
+                    <Button type="button" variant="outline" size="sm" onClick={addEmails} className="whitespace-nowrap sm:w-auto w-full">
                       Add
                     </Button>
                   </div>
