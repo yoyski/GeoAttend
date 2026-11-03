@@ -31,20 +31,18 @@ export function configurePassport() {
               user.googleId = profile.id;
               user.authProvider = 'google';
               user.verified = true; // Google emails are verified
-              if (profile.photos?.[0]?.value) {
-                user.avatar = profile.photos[0].value;
-              } else if (!user.avatar) {
-                // Assign random avatar if user doesn't have one and Google doesn't provide one
+              // Keep existing avatar if user already has one, otherwise assign random
+              if (!user.avatar) {
                 user.avatar = getRandomAvatar();
               }
               await user.save();
             } else {
-              // Create new user
+              // Create new user with random avatar from app collection
               user = await User.create({
                 googleId: profile.id,
                 email: profile.emails?.[0]?.value || '',
                 name: profile.displayName || 'Google User',
-                avatar: profile.photos?.[0]?.value || getRandomAvatar(), // Use Google photo or random avatar
+                avatar: getRandomAvatar(), // Always use random avatar from app
                 verified: true, // Google emails are verified
                 authProvider: 'google',
               });
