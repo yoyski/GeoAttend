@@ -90,7 +90,7 @@ export function Layout() {
         {navLinks.map((link) => (
           <NavLink key={link.path} to={link.path} className={linkClass} title={link.label}>
             <i className={`ti ${link.icon} text-[22px]`} aria-hidden="true" />
-            <span className="leading-tight">{link.label}</span>
+            <span className="hidden leading-tight md:block">{link.label}</span>
           </NavLink>
         ))}
       </nav>

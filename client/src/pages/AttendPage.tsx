@@ -132,11 +132,6 @@ export function AttendPage() {
           {!gpsError && <span className="ml-2">Please allow location access when prompted.</span>}
         </div>
       )}
-      {fix && (
-        <div className="mb-4 rounded-xl bg-[var(--okt)] px-3 py-2.5 text-[13px] text-[var(--ok)]">
-          <strong>✓ GPS Active:</strong> {fix.lat.toFixed(5)}, {fix.lng.toFixed(5)} (±{Math.round(fix.accuracy)}m)
-        </div>
-      )}
 
       {/* Tabs (no shadcn Tabs primitive installed, so styled to match) */}
       <div className="mb-4 inline-flex gap-1 rounded-full bg-[var(--field)] p-1" role="tablist">
