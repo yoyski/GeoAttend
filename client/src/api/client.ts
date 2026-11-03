@@ -1,8 +1,11 @@
 import axios, { AxiosError } from 'axios';
 
+// Use environment variable for API URL, fallback to relative /api for development
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 // Real JWT auth: credentials are sent automatically in httpOnly cookies
 const http = axios.create({
-  baseURL: '/api',
+  baseURL: API_URL,
   withCredentials: true, // Send cookies automatically
 });
 

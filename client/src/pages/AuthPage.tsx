@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 
 /* Where to return after logging in. Stored in localStorage so it survives the email-verification step. */
@@ -198,7 +198,7 @@ export function AuthPage() {
                   type="button"
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2"
-                  onClick={() => window.location.href = `${API_BASE}/auth/google`}
+                  onClick={() => window.location.href = `${API_URL}/auth/google`}
                 >
                   <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
                     <path
@@ -270,7 +270,7 @@ export function AuthPage() {
                   type="button"
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2"
-                  onClick={() => window.location.href = `${API_BASE}/auth/google`}
+                  onClick={() => window.location.href = `${API_URL}/auth/google`}
                 >
                   <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
                     <path

@@ -23,7 +23,7 @@ Root: `npm run dev` runs both client and server concurrently.
 
 ## Environment variables (never commit values)
 Server `.env`: `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL`, `NODE_ENV`, `PORT`, `LATE_AFTER_MINUTES`, `EARLY_CHECKIN_MINUTES`, `LINK_SESSIONS_IN_LIST`.
-Client: `VITE_API_BASE` (defaults to `http://localhost:5000/api`).
+Client: `VITE_API_URL` (defaults to `/api` for relative requests in development, set to full backend URL in production).
 
 ## Conventions
 - Server: **TypeScript**. Use `asyncHandler` wrapper; errors flow to central `errorHandler`. Return `{ data }` on success, `{ error: { code, message } }` on failure (no `ok` field).
