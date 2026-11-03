@@ -8,6 +8,7 @@ const schema = z.object({
   MONGODB_URI: z.string().default('mongodb://localhost:27017/mern-app'),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   CLIENT_URL: z.string().default('http://localhost:5173'),
+  SERVER_URL: z.string().default('http://localhost:5000'),
   JWT_SECRET: z.string().default('your-secret-key-change-in-production'),
   LINK_SESSIONS_IN_LIST: z.enum(['true', 'false']).default('false'),
   GOOGLE_CLIENT_ID: z.string().optional(),
