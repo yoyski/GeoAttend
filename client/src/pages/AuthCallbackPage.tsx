@@ -13,10 +13,13 @@ export function AuthCallbackPage() {
         const token = searchParams.get('token');
 
         if (token) {
-            // Set the token as a cookie
-            // Note: This won't be httpOnly, but it's the only way to make cross-domain OAuth work
-            // The token is still signed and secure
-            document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=lax`;
+            // Set the token as a cookie that matches what the server expects
+            // Important: No 'secure' flag for localhost, but required for production
+            const isProduction = window.location.protocol === 'https:';
+            const cookieString = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; samesite=lax${isProduction ? '; secure' : ''}`;
+            document.cookie = cookieString;
+
+            console.log('OAuth token received and cookie set');
 
             // Clear return-to from localStorage if it exists
             try {
@@ -25,8 +28,8 @@ export function AuthCallbackPage() {
                 // ignore
             }
 
-            // Redirect to /attend or wherever the user was trying to go
-            navigate('/attend', { replace: true });
+            // Use window.location.href for a full page reload to ensure cookie is available
+            window.location.href = '/attend';
         } else {
             // No token, redirect to auth page with error
             navigate('/auth?error=oauth_failed', { replace: true });
