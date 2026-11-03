@@ -172,18 +172,9 @@ export const googleCallback = async (req: Request, res: Response) => {
 
     const token = signJwt(user);
 
-    // Cookie configuration for cross-domain (client on Vercel, server on Render)
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: true, // Always true for OAuth (requires HTTPS)
-      sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      domain: env.NODE_ENV === 'production' ? undefined : undefined, // Let browser handle it
-    });
-
-    // Check for returnTo state parameter (for future enhancement)
-    // For now, always redirect to /attend
-    // The client-side returnTo localStorage will handle redirects after login
-    res.redirect(`${env.CLIENT_URL}/attend`);
+    // For OAuth with separate domains (Vercel client + Render server),
+    // we need to pass the token via URL so the client can set it as a cookie
+    // This works because the redirect goes directly to the client domain
+    res.redirect(`${env.CLIENT_URL}/auth/callback?token=${token}`);
   })(req, res);
 };

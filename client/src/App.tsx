@@ -9,6 +9,7 @@ import { useAuth } from './hooks/useAuth';
 const AccountPage = lazy(() => import('./pages/AccountPage').then(m => ({ default: m.AccountPage })));
 const AttendPage = lazy(() => import('./pages/AttendPage').then(m => ({ default: m.AttendPage })));
 const AuthPage = lazy(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
+const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
 const CreatePage = lazy(() => import('./pages/CreatePage').then(m => ({ default: m.CreatePage })));
 const ManagePage = lazy(() => import('./pages/ManagePage').then(m => ({ default: m.ManagePage })));
 const MinePage = lazy(() => import('./pages/MinePage').then(m => ({ default: m.MinePage })));
@@ -75,6 +76,7 @@ export default function App() {
         <Routes>
           {/* Public routes - no authentication required */}
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/s/:id" element={<SessionPage />} />
 
           {/* Sheet editor: full-width page with no sidebar or top bar, like the prototype */}
