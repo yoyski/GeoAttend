@@ -442,18 +442,6 @@ export function SheetPage() {
               {cfg.title}
             </div>
           </div>
-          {cfg.logo === 1 && (
-            <div style={{ textAlign: 'right' }}>
-              <svg width="44" height="44" viewBox="0 0 56 56" aria-hidden="true">
-                <circle cx="28" cy="28" r="25" fill="none" stroke={ac} strokeWidth="3" strokeDasharray="4 4" />
-                <circle cx="28" cy="28" r="13" fill="none" stroke={ac} strokeWidth="3" />
-                <circle cx="28" cy="28" r="5" fill={ac} />
-              </svg>
-              <div style={{ fontSize: 10, letterSpacing: '.16em', textTransform: 'uppercase', fontWeight: 800, color: ac }}>
-                GeoAttend
-              </div>
-            </div>
-          )}
           {cfg.qr === 1 && (
             <div className="w-16 ml-3.5 shrink-0">
               <QRCodeSVG value={link} size={64} style={{ display: 'block', width: '100%', height: 'auto' }} />
@@ -563,21 +551,6 @@ export function SheetPage() {
           </tbody>
         </table>
 
-        {pageNum === totalPages - 1 && (
-          <div
-            style={{
-              marginTop: 40,
-              paddingTop: 20,
-              borderTop: `1px solid ${GRID}`,
-              fontSize: 11,
-              color: '#6B7280',
-              display: 'flex',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>{cfg.foot}</div>
-            <div>{meta}</div>
-          </div>
         )}
       </div>
     );
