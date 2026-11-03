@@ -958,38 +958,6 @@ export function SheetPage() {
                 ))}
               </CardContent>
             </Card>
-
-            {/* Footer + branding + save */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Footer and branding</CardTitle>
-                <CardDescription>What appears at the bottom and in the corner.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="foot">Footer text</Label>
-                  <Input id="foot" type="text" value={cfg.foot} onChange={(e) => up({ foot: e.target.value })} />
-                </div>
-                <label className="flex cursor-pointer items-center justify-between">
-                  <span className="text-sm">Show logo</span>
-                  <input
-                    type="checkbox"
-                    className={check}
-                    checked={!!cfg.logo}
-                    onChange={(e) => up({ logo: e.target.checked ? 1 : 0 })}
-                  />
-                </label>
-                <label className="flex cursor-pointer items-center justify-between">
-                  <span className="text-sm">Show QR code</span>
-                  <input
-                    type="checkbox"
-                    className={check}
-                    checked={!!cfg.qr}
-                    onChange={(e) => up({ qr: e.target.checked ? 1 : 0 })}
-                  />
-                </label>
-              </CardContent>
-            </Card>
           </div>
         )}
       </div>
