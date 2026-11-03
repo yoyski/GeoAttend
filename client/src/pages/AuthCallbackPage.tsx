@@ -37,10 +37,10 @@ export function AuthCallbackPage() {
     }, [searchParams, navigate]);
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-[var(--bg)]">
+        <div className="flex min-h-[100dvh] items-center justify-center bg-[var(--bg)] px-4">
             <div className="text-center">
                 <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-[var(--pine)] border-t-transparent" />
-                <p className="text-[var(--mut)]">Completing sign in...</p>
+                <p className="text-sm text-[var(--mut)] sm:text-base">Completing sign in...</p>
             </div>
         </div>
     );

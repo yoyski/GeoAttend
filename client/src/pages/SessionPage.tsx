@@ -146,7 +146,7 @@ export function SessionPage() {
   const accuracy = Math.round(fix?.accuracy ?? 0);
 
   return (
-    <div className="relative min-h-screen bg-[var(--bg)] text-[var(--ink)]">
+    <div className="relative min-h-[100dvh] overflow-x-hidden bg-[var(--bg)] text-[var(--ink)]">
       {/* soft glow */}
       <div
         aria-hidden="true"
@@ -154,10 +154,11 @@ export function SessionPage() {
         style={{ background: 'radial-gradient(60% 100% at 50% 0%, color-mix(in srgb, var(--pine) 15%, transparent), transparent)' }}
       />
 
-      <div className="relative mx-auto max-w-[560px] px-4 pb-12 pt-5">
+      {/* Phone: one narrow column. Tablet: a little wider. Laptop and up: map beside the check-in card. */}
+      <div className="relative mx-auto w-full max-w-[560px] px-[max(1rem,env(safe-area-inset-left))] pb-[max(3rem,env(safe-area-inset-bottom))] pt-5 md:max-w-[680px] md:pt-8 lg:max-w-[1040px]">
         {/* Brand bar (this page is public, so it has no app layout) */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 text-[17px] font-bold tracking-tight">
+        <div className="mb-5 flex items-center justify-between gap-3 sm:mb-6">
+          <div className="flex min-w-0 items-center gap-2.5 text-[17px] font-bold tracking-tight">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--pine)] shadow-[var(--shadow-md)]">
               <svg width="22" height="22" viewBox="0 0 56 56" aria-hidden="true">
                 <circle cx="28" cy="28" r="22" fill="none" stroke="var(--onp)" strokeWidth="4" strokeDasharray="5 5" />
@@ -206,11 +207,11 @@ export function SessionPage() {
         )}
 
         {session.loading && fix && !s && !hidden && !needsAuth && (
-          <Card className="mt-2">
-            <CardContent className="p-6 text-center">
+          <Card className="mx-auto mt-2 w-full max-w-[560px]">
+            <CardContent className="p-4 text-center sm:p-6">
               <Skeleton className="mx-auto h-16 w-16 rounded-2xl" />
-              <Skeleton className="mx-auto mt-3 h-7 w-48" />
-              <div className="mx-auto mt-3 flex justify-center gap-2">
+              <Skeleton className="mx-auto mt-3 h-7 w-48 max-w-full" />
+              <div className="mx-auto mt-3 flex flex-wrap justify-center gap-2">
                 <Skeleton className="h-8 w-32 rounded-full" />
                 <Skeleton className="h-8 w-28 rounded-full" />
                 <Skeleton className="h-8 w-24 rounded-full" />
@@ -221,7 +222,7 @@ export function SessionPage() {
               <Card className="mt-5">
                 <CardHeader>
                   <Skeleton className="mx-auto h-6 w-32" />
-                  <Skeleton className="mx-auto h-4 w-48" />
+                  <Skeleton className="mx-auto h-4 w-48 max-w-full" />
                 </CardHeader>
                 <CardContent>
                   <Skeleton className="h-10 w-full" />
@@ -238,7 +239,7 @@ export function SessionPage() {
           <>
             <header>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <h1 className="text-[28px] font-bold leading-tight tracking-tight sm:text-[32px]">{s.title}</h1>
+                <h1 className="min-w-0 break-words text-[24px] font-bold leading-tight tracking-tight min-[400px]:text-[28px] sm:text-[32px] lg:text-[36px]">{s.title}</h1>
                 <StatusChip status={s.status} />
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -247,7 +248,9 @@ export function SessionPage() {
               </div>
             </header>
 
-            <div className="relative mt-5 aspect-[16/10] w-full overflow-hidden rounded-3xl border border-[var(--line)] shadow-[var(--shadow-md)]">
+            {/* Laptop and up: map on the left (stays in view), check-in card on the right */}
+            <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start">
+            <div className="relative aspect-[16/10] max-h-[min(60dvh,520px)] w-full overflow-hidden rounded-3xl border border-[var(--line)] shadow-[var(--shadow-md)] lg:max-h-none lg:[@media(min-height:720px)]:sticky lg:[@media(min-height:720px)]:top-5">
               <LeafletMap
                 venue={{ lat: s.location.lat, lng: s.location.lng, radius: s.radius }}
                 user={fix}
@@ -265,9 +268,9 @@ export function SessionPage() {
 
             {checkedIn ? (
               /* 3. Success */
-              <Card className="mt-5 overflow-hidden">
+              <Card className="overflow-hidden">
                 <div
-                  className="px-6 pb-6 pt-8 text-center"
+                  className="px-4 pb-6 pt-8 text-center sm:px-6"
                   style={{ background: 'linear-gradient(180deg, color-mix(in srgb, var(--ok) 12%, transparent), transparent)' }}
                 >
                   <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[var(--okt)] text-[34px] text-[var(--ok)] ring-8 ring-[color-mix(in_srgb,var(--ok)_12%,transparent)]">
@@ -304,7 +307,7 @@ export function SessionPage() {
               </Card>
             ) : (
               /* 3. Check-in form */
-              <Card className="mt-5">
+              <Card>
                 <CardHeader>
                   <CardTitle>Check in</CardTitle>
                   <CardDescription>
@@ -385,6 +388,7 @@ export function SessionPage() {
                 </CardFooter>
               </Card>
             )}
+            </div>
           </>
         )}
 
@@ -491,8 +495,8 @@ function StateCard({
 }) {
   const c = tone === 'err' ? 'var(--err)' : 'var(--pine)';
   return (
-    <Card className="mt-2 overflow-hidden">
-      <CardContent className="p-6 text-center">
+    <Card className="mx-auto mt-2 w-full max-w-[560px] overflow-hidden">
+      <CardContent className="p-4 text-center min-[400px]:p-6">
         <span
           className="mx-auto grid h-16 w-16 place-items-center rounded-2xl text-[30px]"
           style={{ color: c, background: `color-mix(in srgb, ${c} 12%, transparent)` }}

@@ -295,7 +295,7 @@ export function SheetPage() {
 }`;
 
   const wrap = (children: ReactNode) => (
-    <div className="mx-auto w-full max-w-[1052px] px-4 pb-24 pt-5">
+    <div className="mx-auto w-full max-w-[1052px] px-[max(1rem,env(safe-area-inset-left))] pb-24 pt-5 min-[1536px]:max-w-[1240px]">
       <style>{printCss}</style>
       {children}
     </div>
@@ -309,12 +309,12 @@ export function SheetPage() {
           {/* Header skeleton */}
           <div className="space-y-2">
             <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-96" />
+            <Skeleton className="h-4 w-full max-w-sm" />
           </div>
 
           {/* Sheet preview skeleton */}
-          <div className="mt-6 space-y-3 rounded-xl border border-[var(--line)] bg-[var(--card)] p-6">
-            <Skeleton className="h-6 w-64" />
+          <div className="mt-6 space-y-3 rounded-xl border border-[var(--line)] bg-[var(--card)] p-4 sm:p-6">
+            <Skeleton className="h-6 w-64 max-w-full" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-3/4" />
@@ -323,7 +323,7 @@ export function SheetPage() {
               <Skeleton className="h-32 w-full" />
             </div>
 
-            <div className="grid grid-cols-3 gap-4 pt-4">
+            <div className="grid grid-cols-1 gap-4 pt-4 min-[480px]:grid-cols-3">
               <Skeleton className="h-24" />
               <Skeleton className="h-24" />
               <Skeleton className="h-24" />
@@ -550,8 +550,6 @@ export function SheetPage() {
             })}
           </tbody>
         </table>
-
-        )}
       </div>
     );
   };
@@ -625,7 +623,7 @@ export function SheetPage() {
         </button>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
           <div className="min-w-0">
-            <h1 className="text-[28px] font-bold leading-tight tracking-tight">Attendance sheet</h1>
+            <h1 className="text-[24px] font-bold leading-tight tracking-tight min-[400px]:text-[28px]">Attendance sheet</h1>
             <p className="pb-4 text-[13px]" style={mut}>
               {isViewOnly
                 ? 'View the attendance sheet for this session.'
@@ -644,7 +642,7 @@ export function SheetPage() {
 
       <div className={`mt-[18px] grid grid-cols-1 gap-x-[21px] gap-y-[18px] ${readOnly || isViewOnly ? 'mx-auto max-w-[820px]' : 'min-[900px]:grid-cols-[minmax(0,1.14fr)_minmax(0,1fr)]'}`}>
         {/* Preview */}
-        <div className="min-w-0 min-[900px]:sticky min-[900px]:top-5 min-[900px]:self-start">
+        <div className="min-w-0 min-[900px]:self-start min-[900px]:[@media(min-height:760px)]:sticky min-[900px]:[@media(min-height:760px)]:top-5">
           <div
             ref={pvRef}
             className="sheet-pv relative w-full overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-md"
@@ -655,7 +653,7 @@ export function SheetPage() {
 
           {/* Page navigation - only show if multiple pages */}
           {totalPages > 1 && (
-            <div className="noprint mt-3 flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--card)] px-4 py-2.5">
+            <div className="noprint mt-3 flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--card)] px-2 py-2.5 sm:px-4">
               <button
                 type="button"
                 onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
@@ -666,15 +664,16 @@ export function SheetPage() {
                   } ${focusRing}`}
               >
                 <i className="ti ti-chevron-left text-[16px]" aria-hidden="true" />
-                Previous
+                <span className="hidden min-[400px]:inline">Previous</span>
+                <span className="sr-only min-[400px]:hidden">Previous page</span>
               </button>
 
               <div className="flex items-center gap-2">
                 <span className="text-sm text-[var(--mut)]">
                   Page {currentPage + 1} of {totalPages}
                 </span>
-                <div className="flex gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => (
+                <div className="hidden gap-1 sm:flex">
+                  {totalPages <= 10 && Array.from({ length: totalPages }, (_, i) => (
                     <button
                       key={i}
                       type="button"
@@ -696,7 +695,8 @@ export function SheetPage() {
                   : 'text-[var(--pine)] hover:bg-[var(--tint)]'
                   } ${focusRing}`}
               >
-                Next
+                <span className="hidden min-[400px]:inline">Next</span>
+                <span className="sr-only min-[400px]:hidden">Next page</span>
                 <i className="ti ti-chevron-right text-[16px]" aria-hidden="true" />
               </button>
             </div>
@@ -728,7 +728,7 @@ export function SheetPage() {
                   </p>
                 </div>
 
-                <div className="grid gap-5 sm:grid-cols-[1.5fr_1fr]">
+                <div className="grid gap-5 min-[560px]:grid-cols-[1.5fr_1fr] min-[900px]:grid-cols-1 min-[1100px]:grid-cols-[1.5fr_1fr]">
                   <div className="min-w-0 space-y-2">
                     <Label>Paper size</Label>
                     <Select value={cfg.paper} onValueChange={(v) => up({ paper: v as PaperKey })}>
@@ -824,7 +824,7 @@ export function SheetPage() {
               <CardContent className="space-y-2.5">
                 {cfg.cols.map((c, i) => (
                   <div key={c.id}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <input
                         type="checkbox"
                         className={check}
@@ -836,11 +836,13 @@ export function SheetPage() {
                       <Input
                         type="text"
                         aria-label="Column label"
+                        className="min-w-0 flex-1 basis-[130px]"
                         value={c.l}
                         maxLength={30}
                         disabled={locked}
                         onChange={(e) => setCol(i, { l: e.target.value })}
                       />
+                      <div className="ml-auto flex shrink-0 items-center gap-2">
                       <button
                         type="button"
                         className={miniBtn}
@@ -848,7 +850,7 @@ export function SheetPage() {
                         disabled={i === 0 || locked}
                         onClick={() => moveCol(i, -1)}
                       >
-                        ↑
+                        <i className="ti ti-arrow-up" aria-hidden="true" />
                       </button>
                       <button
                         type="button"
@@ -857,7 +859,7 @@ export function SheetPage() {
                         disabled={i === cfg.cols.length - 1 || locked}
                         onClick={() => moveCol(i, 1)}
                       >
-                        ↓
+                        <i className="ti ti-arrow-down" aria-hidden="true" />
                       </button>
                       {c.k === 'custom' ? (
                         <button
@@ -867,21 +869,22 @@ export function SheetPage() {
                           disabled={locked}
                           onClick={() => up({ cols: cfg.cols.filter((_, j) => j !== i) })}
                         >
-                          ✕
+                          <i className="ti ti-x" aria-hidden="true" />
                         </button>
                       ) : (
                         <span className="h-9 w-9 shrink-0" aria-hidden="true" />
                       )}
+                      </div>
                     </div>
                     {c.k === 'custom' && (
-                      <div className="ml-[30px] mt-1.5 flex items-center gap-2 text-[13px]" style={mut}>
+                      <div className="ml-[30px] mt-1.5 flex flex-wrap items-center gap-2 text-[13px]" style={mut}>
                         <span className="text-[11px] font-semibold">Input type</span>
                         <Select
                           value={c.inputType || 'text'}
                           disabled={locked}
                           onValueChange={(v) => setCol(i, { inputType: v as InputType })}
                         >
-                          <SelectTrigger className="w-[190px]">
+                          <SelectTrigger className="w-[190px] max-w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -904,6 +907,7 @@ export function SheetPage() {
                         id="new-col"
                         type="text"
                         placeholder="e.g. Contact no., Age, Section"
+                        className="min-w-0 flex-1"
                         maxLength={30}
                         value={newCol}
                         onChange={(e) => setNewCol(e.target.value)}
@@ -914,7 +918,7 @@ export function SheetPage() {
                           }
                         }}
                       />
-                      <Button type="button" variant="outline" size="sm" onClick={addCol} disabled={!newCol.trim() || cfg.cols.length >= MAX_COLS}>
+                      <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={addCol} disabled={!newCol.trim() || cfg.cols.length >= MAX_COLS}>
                         <i className="ti ti-plus mr-1 text-[16px]" aria-hidden="true" />
                         Add
                       </Button>

@@ -96,8 +96,8 @@ function Toast({ msg }: { msg: string }) {
   return (
     <div
       role="status"
-      className="fixed left-1/2 z-50 w-max max-w-[90%] -translate-x-1/2 rounded-full px-5 py-2.5 text-center text-[13px] font-semibold shadow-[var(--shadow-lg)]"
-      style={{ bottom: 'calc(84px + env(safe-area-inset-bottom))', background: 'var(--ink)', color: 'var(--bg)' }}
+      className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] left-1/2 z-50 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-full px-5 py-2.5 text-center text-[13px] font-semibold shadow-[var(--shadow-lg)] lg:bottom-8"
+      style={{ background: 'var(--ink)', color: 'var(--bg)' }}
     >
       {msg}
     </div>
@@ -345,9 +345,9 @@ export function ManagePage() {
             </div>
           </header>
 
-          <div className="mt-6 grid gap-5 lg:grid-cols-3">
+          <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
             {/* Stats card skeleton */}
-            <div className="min-w-0 space-y-5 lg:col-span-2">
+            <div className="min-w-0 space-y-5">
               <Card>
                 <CardHeader className="flex-row items-center justify-between space-y-0">
                   <Skeleton className="h-6 w-32" />
@@ -446,9 +446,9 @@ export function ManagePage() {
 
           <ErrorBox error={error} />
 
-          <div className="mt-5 grid gap-5 sm:mt-6 lg:grid-cols-3">
+          <div className="mt-5 grid gap-5 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
             {/* ---------- Left / main column ---------- */}
-            <div className="min-w-0 space-y-5 lg:col-span-2">
+            <div className="min-w-0 space-y-5">
               {/* Attendance overview */}
               <Card>
                 <CardHeader className="flex-row items-center justify-between space-y-0">
@@ -632,7 +632,7 @@ export function ManagePage() {
                     )}
                   </CardHeader>
                   <CardContent>
-                    <p className="break-all font-mono text-[24px] font-semibold leading-none tracking-[0.04em] sm:text-[28px]">
+                    <p className="break-all font-mono text-[20px] font-semibold leading-none tracking-[0.04em] min-[400px]:text-[24px] sm:text-[28px]">
                       {pass ?? '••••••••'}
                     </p>
                     <p className="mt-2 text-[13px]" style={mut}>
@@ -874,11 +874,11 @@ function EditView({
           )}
         </CardContent>
 
-        <CardFooter className="gap-2">
-          <Button type="button" variant="outline" className="flex-1" onClick={onBack}>
+        <CardFooter className="flex-col-reverse gap-2 min-[360px]:flex-row">
+          <Button type="button" variant="outline" className="w-full min-[360px]:flex-1" onClick={onBack}>
             Cancel
           </Button>
-          <Button type="button" className="flex-1" onClick={save}>
+          <Button type="button" className="w-full min-[360px]:flex-1" onClick={save}>
             Save changes
           </Button>
         </CardFooter>

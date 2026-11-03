@@ -59,7 +59,7 @@ function SettingRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3.5 py-3.5">
+    <div className="flex items-center gap-3 py-3.5 min-[400px]:gap-3.5">
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--tint)] text-lg text-[var(--pine)]">
         <i className={`ti ${icon}`} aria-hidden="true" />
       </span>
@@ -167,7 +167,7 @@ export function AccountPage() {
       )}
 
       {me.loading && !d && (
-        <div className="grid gap-5 md:grid-cols-[340px_1fr] md:items-start">
+        <div className="grid gap-5 md:grid-cols-[minmax(260px,340px)_minmax(0,1fr)] md:items-start">
           {/* Left: identity skeleton */}
           <Card className="overflow-hidden">
             <div className="h-20 bg-[var(--line)]" />
@@ -189,7 +189,7 @@ export function AccountPage() {
           </Card>
 
           {/* Right: settings skeleton */}
-          <div className="space-y-5">
+          <div className="min-w-0 space-y-5">
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
@@ -213,7 +213,7 @@ export function AccountPage() {
       )}
 
       {d && (
-        <div className="grid gap-5 md:grid-cols-[340px_1fr] md:items-start">
+        <div className="grid gap-5 md:grid-cols-[minmax(260px,340px)_minmax(0,1fr)] md:items-start">
           {/* Left: identity */}
           <Card className="overflow-hidden">
             <div
@@ -250,7 +250,7 @@ export function AccountPage() {
                 />
               </div>
               {d.avatar && (
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                   <button
                     type="button"
                     disabled={uploading}
@@ -318,7 +318,7 @@ export function AccountPage() {
           </Card>
 
           {/* Right: settings */}
-          <div className="space-y-5">
+          <div className="min-w-0 space-y-5">
             <Card>
               <CardHeader>
                 <CardTitle>Notifications</CardTitle>
@@ -355,15 +355,15 @@ export function AccountPage() {
               </CardContent>
             </Card>
 
-            <div className="flex items-center gap-3.5 rounded-2xl border border-[color-mix(in_srgb,var(--err)_30%,transparent)] bg-[var(--errt)] p-4">
+            <div className="flex flex-wrap items-center gap-x-3.5 gap-y-3 rounded-2xl border border-[color-mix(in_srgb,var(--err)_30%,transparent)] bg-[var(--errt)] p-4">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--card)] text-lg text-[var(--err)]">
                 <i className="ti ti-trash" aria-hidden="true" />
               </span>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-[180px]">
                 <p className="text-sm font-semibold text-[var(--err)]">Delete account</p>
                 <p className="text-[13px] text-[var(--mut)]">Removes your account and all your sessions. Cannot be undone.</p>
               </div>
-              <Button type="button" variant="destructive" size="sm" onClick={() => setDlg('delete')}>
+              <Button type="button" variant="destructive" size="sm" className="w-full min-[480px]:w-auto" onClick={() => setDlg('delete')}>
                 Delete
               </Button>
             </div>
@@ -373,7 +373,7 @@ export function AccountPage() {
 
       {/* Change password */}
       <Dialog open={dlg === 'password'} onOpenChange={(o) => !o && closePassword()}>
-        <DialogContent>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-md">
           <form
             className="grid gap-4"
             onSubmit={(e) => {
@@ -407,7 +407,7 @@ export function AccountPage() {
                 onChange={(e) => setNewPassword(e.target.value)}
               />
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
               <Button type="button" variant="outline" onClick={closePassword}>
                 Cancel
               </Button>
@@ -421,7 +421,7 @@ export function AccountPage() {
 
       {/* Sign out / delete confirm */}
       <Dialog open={dlg === 'delete' || dlg === 'signout'} onOpenChange={(o) => !o && setDlg(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{dlg === 'delete' ? 'Delete your account?' : 'Sign out?'}</DialogTitle>
             <DialogDescription>
@@ -430,7 +430,7 @@ export function AccountPage() {
                 : 'You will need to log in again to see sessions.'}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
             <Button type="button" variant="outline" onClick={() => setDlg(null)}>
               Cancel
             </Button>

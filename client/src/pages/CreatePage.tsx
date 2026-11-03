@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sessionsApi } from '../api/endpoints';
 import { ApiError } from '../api/client';
@@ -15,37 +15,10 @@ import { useRequireLogin } from '../hooks/useRequireLogin';
 import { clearDraft, loadDraft, saveDraft } from '../lib/returnTo';
 import type { Verification } from '../types';
 
-const VERIFY: Record<Verification, { tile: string; title: string; icon: ReactNode }> = {
-  location: {
-    tile: 'Location',
-    title: 'Location only',
-    icon: (
-      <>
-        <path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z" />
-        <circle cx="12" cy="10" r="2.5" />
-      </>
-    ),
-  },
-  passcode: {
-    tile: 'Passcode',
-    title: 'Location + passcode',
-    icon: (
-      <>
-        <rect x="5" y="11" width="14" height="9" rx="2" />
-        <path d="M8 11V8a4 4 0 018 0v3" />
-      </>
-    ),
-  },
-  email: {
-    tile: 'Emails',
-    title: 'Location + emails',
-    icon: (
-      <>
-        <rect x="3" y="5" width="18" height="14" rx="2" />
-        <path d="M3 7l9 6 9-6" />
-      </>
-    ),
-  },
+const VERIFY: Record<Verification, { tile: string; title: string; icon: string }> = {
+  location: { tile: 'Location', title: 'Location only', icon: 'ti-map-pin' },
+  passcode: { tile: 'Passcode', title: 'Location + passcode', icon: 'ti-lock' },
+  email: { tile: 'Emails', title: 'Location + emails', icon: 'ti-mail' },
 };
 const VERIFY_ORDER: Verification[] = ['location', 'passcode', 'email'];
 
@@ -220,7 +193,7 @@ export function CreatePage() {
   };
 
   return (
-    <form onSubmit={submit} noValidate>
+    <form onSubmit={submit} noValidate className="min-w-0">
       <PageHeading title="New session" sub="Location is always required" />
 
       {restored && user && (
@@ -230,9 +203,9 @@ export function CreatePage() {
         </p>
       )}
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-2 lg:items-start">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
         {/* ---------- Details ---------- */}
-        <Card className="lg:col-start-1 lg:row-start-1">
+        <Card className="min-w-0 lg:col-start-1 lg:row-start-1">
           <CardHeader>
             <CardTitle>Details</CardTitle>
             <CardDescription>What and when.</CardDescription>
@@ -248,8 +221,8 @@ export function CreatePage() {
               <Input id="c-venue" value={f.venue} onChange={(e) => set('venue', e.target.value)} placeholder="e.g. Main hall" />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 min-w-0 space-y-2">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+              <div className="col-span-2 min-w-0 space-y-2 sm:col-span-1 lg:col-span-2 xl:col-span-1">
                 <Label htmlFor="c-date">Date</Label>
                 <Input id="c-date" type="date" className={dateCls} value={f.dt} onChange={(e) => set('dt', e.target.value)} />
               </div>
@@ -280,7 +253,7 @@ export function CreatePage() {
         </Card>
 
         {/* ---------- Location (sticky on wide screens) ---------- */}
-        <Card className="lg:sticky lg:top-5 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <Card className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:[@media(min-height:760px)]:sticky lg:[@media(min-height:760px)]:top-5">
           <CardHeader>
             <CardTitle>Location</CardTitle>
             <CardDescription>
@@ -289,7 +262,7 @@ export function CreatePage() {
           </CardHeader>
           <CardContent>
             <div className="overflow-hidden rounded-2xl border border-[var(--line)] shadow-[var(--shadow-sm)]">
-              <div className="aspect-[320/240] w-full">
+              <div className="aspect-[4/3] max-h-[min(60dvh,480px)] w-full sm:aspect-[16/10] lg:aspect-[4/3]">
                 <LeafletMap
                   venue={{ lat: f.lat, lng: f.lng, radius: f.radius }}
                   user={fix}
@@ -302,9 +275,14 @@ export function CreatePage() {
             </div>
 
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <span className="min-w-0 truncate text-[12px] min-[480px]:text-[13px]" style={mut} title={`Venue: ${f.lat.toFixed(5)}, ${f.lng.toFixed(5)}${fix ? ` | GPS: ${fix.lat.toFixed(5)}, ${fix.lng.toFixed(5)}` : ' | GPS: waiting...'}`}>
+              <span className="min-w-0 break-words text-[12px] min-[480px]:text-[13px]" style={mut} title={`Venue: ${f.lat.toFixed(5)}, ${f.lng.toFixed(5)}${fix ? ` | GPS: ${fix.lat.toFixed(5)}, ${fix.lng.toFixed(5)}` : ' | GPS: waiting...'}`}>
                 Venue: {f.lat.toFixed(5)}, {f.lng.toFixed(5)} · {f.radius} m
-                {fix && <span className="ml-2 text-[var(--ok)] block sm:inline mt-1 sm:mt-0">📍 GPS: {fix.lat.toFixed(5)}, {fix.lng.toFixed(5)}</span>}
+                {fix && (
+                  <span className="mt-1 block text-[var(--ok)] sm:ml-2 sm:mt-0 sm:inline">
+                    <i className="ti ti-map-pin mr-0.5 align-[-1px]" aria-hidden="true" />
+                    GPS: {fix.lat.toFixed(5)}, {fix.lng.toFixed(5)}
+                  </span>
+                )}
               </span>
               <Button type="button" variant="outline" size="sm" onClick={centerOnMe} disabled={!fix} className="whitespace-nowrap">
                 <i className="ti ti-current-location mr-1.5 text-[16px]" aria-hidden="true" />
@@ -332,7 +310,7 @@ export function CreatePage() {
         </Card>
 
         {/* ---------- Verification, sheet, publish ---------- */}
-        <div className="space-y-5 lg:col-start-1 lg:row-start-2">
+        <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-2">
           <Card>
             <CardHeader>
               <CardTitle>Verification</CardTitle>
@@ -354,7 +332,7 @@ export function CreatePage() {
                         onChange={() => set('verification', k)}
                       />
                       <span
-                        className="flex flex-col items-center gap-1.5 rounded-2xl border-2 px-1 py-3.5 text-center text-xs font-semibold transition-all hover:bg-[var(--tint)] peer-focus-visible:ring-4 peer-focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]"
+                        className="flex flex-col items-center gap-1.5 rounded-2xl border-2 px-1 py-3 text-center text-[11px] font-semibold min-[360px]:py-3.5 min-[360px]:text-xs transition-all hover:bg-[var(--tint)] peer-focus-visible:ring-4 peer-focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]"
                         style={{
                           borderColor: on ? 'var(--pine)' : 'var(--line)',
                           backgroundColor: on ? 'var(--tint)' : 'transparent',
@@ -362,19 +340,7 @@ export function CreatePage() {
                           color: 'var(--ink)',
                         }}
                       >
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="24"
-                          height="24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                        >
-                          {VERIFY[k].icon}
-                        </svg>
+                        <i className={`ti ${VERIFY[k].icon} text-[24px] leading-none`} aria-hidden="true" />
                         {VERIFY[k].tile}
                       </span>
                     </label>
@@ -452,15 +418,15 @@ export function CreatePage() {
                   ) : (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {f.emails.map((m) => (
-                        <Badge key={m} variant="secondary" className="gap-1.5">
+                        <Badge key={m} variant="secondary" className="max-w-full gap-1.5 break-all">
                           {m}
                           <button
                             type="button"
                             aria-label={`Remove ${m}`}
-                            className="font-bold leading-none"
+                            className="grid place-items-center leading-none"
                             onClick={() => set('emails', f.emails.filter((x) => x !== m))}
                           >
-                            ×
+                            <i className="ti ti-x text-[14px]" aria-hidden="true" />
                           </button>
                         </Badge>
                       ))}

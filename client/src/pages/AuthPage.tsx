@@ -122,24 +122,25 @@ export function AuthPage() {
   );
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[var(--bg)]">
+    <div className="relative min-h-[100dvh] overflow-x-hidden bg-[var(--bg)]">
       {/* Decorative contour rings */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-80"
+        className="pointer-events-none absolute inset-x-0 top-0 h-60 sm:h-80"
         style={{
           background: 'radial-gradient(60% 100% at 50% 0%, color-mix(in srgb, var(--pine) 18%, transparent), transparent)',
         }}
         aria-hidden="true"
       />
 
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-[460px] flex-col justify-center px-[18px] py-10">
+      {/* Centered column. Short screens (landscape phones, keyboard open) scroll instead of clipping. */}
+      <div className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-[460px] flex-col justify-center px-[max(1rem,env(safe-area-inset-left))] py-6 sm:max-w-[480px] sm:px-[18px] sm:py-10 [@media(max-height:520px)]:justify-start">
         {/* Brand */}
-        <div className="mb-6 text-center">
+        <div className="mb-5 text-center sm:mb-6">
           <div className="mx-auto w-fit">
-            <span className="grid h-16 w-16 place-items-center rounded-2xl bg-[var(--pine)] shadow-[var(--shadow-lg)]"><Logo /></span>
+            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--pine)] shadow-[var(--shadow-lg)] sm:h-16 sm:w-16"><Logo /></span>
           </div>
           <h1
-            className="mt-3.5 text-[30px] font-bold leading-tight tracking-tight text-[var(--ink)]"
+            className="mt-3 text-[26px] font-bold leading-tight tracking-tight text-[var(--ink)] sm:mt-3.5 sm:text-[30px]"
           >
             GeoAttend
           </h1>
@@ -227,7 +228,7 @@ export function AuthPage() {
                     <span className="w-full border-t border-[var(--line)]" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-[var(--card)] px-2 text-[var(--mut)]">Or continue with email</span>
+                    <span className="bg-[var(--card)] px-2 text-center text-[11px] text-[var(--mut)] sm:text-xs">Or continue with email</span>
                   </div>
                 </div>
 
@@ -299,7 +300,7 @@ export function AuthPage() {
                     <span className="w-full border-t border-[var(--line)]" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-[var(--card)] px-2 text-[var(--mut)]">Or register with email</span>
+                    <span className="bg-[var(--card)] px-2 text-center text-[11px] text-[var(--mut)] sm:text-xs">Or register with email</span>
                   </div>
                 </div>
 

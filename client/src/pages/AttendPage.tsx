@@ -12,9 +12,13 @@ import { useLocationCtx } from '../hooks/useLocation';
 import { useRequireLogin } from '../hooks/useRequireLogin';
 import type { Fix } from '../types';
 
+/** Fills the width it is given: 1 column on phones, then as many 300px+ columns as fit. */
+const gridCls = 'grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-3';
+
+// Tabs share the full width on phones and shrink to fit from 640px.
 const tabCls = (on: boolean) =>
   [
-    'rounded-full px-4 py-1.5 text-sm font-semibold transition-all cursor-pointer',
+    'flex-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] font-semibold transition-all cursor-pointer sm:flex-none sm:px-4 sm:text-sm',
     'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]',
     on ? 'bg-[var(--card)] text-[var(--pine)] shadow-[var(--shadow-sm)]' : 'text-[var(--mut)] hover:text-[var(--ink)]',
   ].join(' ');
@@ -119,7 +123,7 @@ export function AttendPage() {
   const noneHere = tab === 'sessions' && !!fix && !nearby.error && !!nearby.data && nearby.data.length === 0;
 
   return (
-    <div>
+    <div className="min-w-0">
       <PageHeading
         title="Attend"
         sub={tab === 'history' && history.data ? `${history.data.history.length} recent check-ins` : 'Sessions you can join'}
@@ -134,7 +138,7 @@ export function AttendPage() {
       )}
 
       {/* Tabs (no shadcn Tabs primitive installed, so styled to match) */}
-      <div className="mb-4 inline-flex gap-1 rounded-full bg-[var(--field)] p-1" role="tablist">
+      <div className="mb-4 flex w-full gap-1 rounded-full bg-[var(--field)] p-1 sm:inline-flex sm:w-auto" role="tablist">
         <button role="tab" aria-selected={tab === 'sessions'} onClick={() => setTab('sessions')} className={tabCls(tab === 'sessions')}>
           Sessions
         </button>
@@ -162,15 +166,15 @@ export function AttendPage() {
             <ErrorCard error={nearby.error} />
 
             {nearby.loading && !nearby.data && (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className={gridCls}>
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)]">
                     <div className="flex items-start gap-3.5">
                       <Skeleton className="h-12 w-12 rounded-xl" />
                       <div className="min-w-0 flex-1 space-y-2">
                         <div className="flex items-start justify-between gap-2.5">
-                          <Skeleton className="h-5 w-32" />
-                          <Skeleton className="h-5 w-16" />
+                          <Skeleton className="h-5 w-32 max-w-full" />
+                          <Skeleton className="h-5 w-16 shrink-0" />
                         </div>
                         <Skeleton className="h-4 w-24" />
                       </div>
@@ -193,12 +197,12 @@ export function AttendPage() {
             )}
 
             {nearby.data && nearby.data.length > 0 && (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className={gridCls}>
                 {nearby.data.map((s) => (
                   <Link
                     key={s.id}
                     to={`/s/${s.id}`}
-                    className="group rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]"
+                    className="group min-w-0 rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]"
                   >
                     <div className="flex items-start gap-3.5">
                       <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--tint)]">
@@ -206,8 +210,10 @@ export function AttendPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2.5">
-                          <h3 className="truncate text-[16px] font-semibold tracking-tight">{s.title}</h3>
-                          <StatusChip status={s.status} />
+                          <h3 className="min-w-0 truncate text-[16px] font-semibold tracking-tight">{s.title}</h3>
+                          <span className="shrink-0">
+                            <StatusChip status={s.status} />
+                          </span>
                         </div>
                         <p className="mt-0.5 truncate text-[13px]" style={mut}>
                           <i className="ti ti-map-pin mr-1" aria-hidden="true" />
@@ -288,7 +294,7 @@ export function AttendPage() {
                     </p>
                   </Notice>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="mx-auto max-w-[760px] space-y-6 sm:mx-0">
                     {groupByDay(history.data.history).map((g) => (
                       <section key={g.label} aria-label={g.label}>
                         <h3 className="mb-2.5 text-[13px] font-semibold" style={mut}>
@@ -308,8 +314,8 @@ export function AttendPage() {
                               </span>
                               <div className="rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)]">
                                 <div className="flex items-start justify-between gap-2.5">
-                                  <h4 className="truncate text-[16px] font-semibold tracking-tight">{h.title}</h4>
-                                  <Badge variant={h.late ? 'warning' : 'success'} showDot>
+                                  <h4 className="min-w-0 truncate text-[16px] font-semibold tracking-tight">{h.title}</h4>
+                                  <Badge variant={h.late ? 'warning' : 'success'} showDot className="shrink-0">
                                     {h.late ? 'Late' : 'Present'}
                                   </Badge>
                                 </div>
