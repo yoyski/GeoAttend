@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 
 /**
  * OAuth callback page that receives the JWT token from Google OAuth
@@ -11,6 +13,7 @@ export function AuthCallbackPage() {
 
     useEffect(() => {
         const token = searchParams.get('token');
+        const isNative = Capacitor.isNativePlatform();
 
         if (token) {
             // Set the token as a cookie that matches what the server expects
@@ -26,6 +29,13 @@ export function AuthCallbackPage() {
                 localStorage.removeItem('geoattend:returnTo');
             } catch {
                 // ignore
+            }
+
+            // Close the in-app browser on mobile
+            if (isNative) {
+                Browser.close().catch(() => {
+                    // Ignore errors if browser is already closed
+                });
             }
 
             // Use window.location.href for a full page reload to ensure cookie is available
