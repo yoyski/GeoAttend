@@ -43,13 +43,15 @@ Transfer to your phone and install, or use:
 - **Do NOT set `server.url` in `capacitor.config.ts`** - this causes a black screen
 
 ### Google OAuth on Mobile
-- Uses deep linking with custom URL scheme: `https://geoattend.app`
+- Uses deep linking with custom URL scheme: `geoattend://auth`
 - When user signs in with Google:
   1. Opens in-app browser
   2. User authenticates with Google
-  3. Server redirects to `https://geoattend.app/auth/callback?token=xxx`
-  4. Android deep link automatically closes browser and opens app
-  5. App sets the token cookie and redirects to `/attend`
+  3. Server detects mobile request (via `?mobile=true` parameter)
+  4. Server redirects to `geoattend://auth/callback?token=xxx`
+  5. Android deep link automatically closes browser and opens app
+  6. App's deep link listener catches the URL and sets token cookie
+  7. App redirects to `/attend` with user logged in
 
 ### Location Permissions
 - Location permissions are configured in `AndroidManifest.xml`
@@ -63,9 +65,10 @@ Transfer to your phone and install, or use:
 - Rebuild with `npm run build` and `npx cap sync android`
 
 ### OAuth browser doesn't close
-- Deep linking is configured with `https://geoattend.app` scheme
-- Check `AndroidManifest.xml` has the intent-filter for deep links
-- Server adds `?mobile=true` query parameter to detect mobile requests
+- Deep linking is configured with `geoattend://auth` custom URL scheme
+- Check `AndroidManifest.xml` has the intent-filter: `<data android:scheme="geoattend" android:host="auth" />`
+- Server adds `?mobile=true` query parameter and redirects to `geoattend://auth/callback?token=xxx`
+- App.tsx has a deep link listener that catches the URL and sets the token
 
 ### Location permission denied
 - Go to Android Settings → Apps → GeoAttend → Permissions
