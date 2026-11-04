@@ -164,7 +164,11 @@ export function SheetPage() {
   // use creator endpoint for manage mode (creator via /manage/:id)
   const session = useAsync(() => {
     if (isPreview) return Promise.resolve(null);
-    if (isViewOnly) return sessionsApi.getDetail(id); // Public endpoint, uses linkToken
+    if (isViewOnly) {
+      // For participants viewing via /s/:linkToken/sheet, use the public detail endpoint
+      // Pass dummy location since we're just viewing the sheet, not checking in
+      return sessionsApi.detail(id, { lat: 0, lng: 0, accuracy: 0 });
+    }
     return sessionsApi.getMine(id); // Creator endpoint, uses database _id
   }, [id, isViewOnly]);
 
