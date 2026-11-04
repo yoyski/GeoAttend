@@ -160,19 +160,25 @@ export function SheetPage() {
   const readOnly = printMode || viewMode || pdfMode;
 
   // No API calls for the "preview" id.
-  // For viewing attendance sheets:
-  // - If viewing from /s/:linkToken/sheet (participant view), we still need session data
-  //   but can't use the public detail endpoint because it requires valid location
-  // - Solution: If user is logged in and is the creator, use getMine endpoint
-  // - Otherwise, fetch basic session info without location check
-  const session = useAsync(() => {
-    if (isPreview) return Promise.resolve(null);
-    // For now, always use getMine for authenticated users viewing sheets
-    // This works for creators. For participants, they should use /manage/:id/sheet
-    return sessionsApi.getMine(id);
-  }, [id]);
+  // For participant viewing (/s/:linkToken/sheet), use the new viewSheet endpoint
+  // For creator viewing (/manage/:id/sheet), use getMine endpoint
+  const sheetData = useAsync(async () => {
+    if (isPreview) return null;
+    if (isViewOnly) {
+      // Participant view - use linkToken
+      const data = await sessionsApi.viewSheet(id);
+      return { session: data.session, records: data.records };
+    }
+    // Creator view - use database _id
+    const [sessionData, recordsData] = await Promise.all([
+      sessionsApi.getMine(id),
+      sessionsApi.records(id)
+    ]);
+    return { session: sessionData, records: recordsData.records };
+  }, [id, isViewOnly]);
 
-  const recs = useAsync(() => (isPreview ? Promise.resolve(null) : sessionsApi.records(id)), [id]);
+  const session = { data: sheetData.data?.session, loading: sheetData.loading, error: sheetData.error, reload: sheetData.reload };
+  const recs = { data: sheetData.data?.records ? { records: sheetData.data.records, summary: { total: sheetData.data.records.length, present: sheetData.data.records.length, absent: [] } } : null, loading: sheetData.loading, error: sheetData.error, reload: sheetData.reload };
 
   const [cfg, setCfg] = useState<Cfg | null>(null);
   const [currentPage, setCurrentPage] = useState(0);

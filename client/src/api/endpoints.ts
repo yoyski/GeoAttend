@@ -11,6 +11,9 @@ export const sessionsApi = {
     api<ParticipantSession>('get', `/sessions/${id}`, { params: { ...fix, ...(t ? { t } : {}) } }),
   checkIn: (id: string, fix: Fix, extra: { passcode?: string; token?: string; customFields?: Record<string, string>; signature?: string }) =>
     api<RecordRow>('post', `/sessions/${id}/check-in`, { data: { ...fix, ...extra } }),
+  // participant view attendance sheet (no location check)
+  viewSheet: (linkToken: string) =>
+    api<{ session: CreatorSession; records: RecordRow[] }>('get', `/sessions/${linkToken}/sheet`),
   // creator
   create: (input: SessionInput) =>
     api<{ session: CreatorSession; passcode?: string }>('post', '/sessions', { data: input }),

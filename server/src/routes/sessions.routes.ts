@@ -23,6 +23,8 @@ r.post('/', auth, validate({ body: createSessionBody }), h(s.create));
 
 // Participant detail - cache 1 minute (optional auth - allows checking location before requiring login)
 r.get('/:id', optionalAuth, cacheStrategies.short, validate({ params: idParams, query: detailQuery }), h(s.participantDetail));
+// Participant view attendance sheet - no location check required
+r.get('/:id/sheet', optionalAuth, cacheStrategies.short, validate({ params: idParams }), h(s.viewAttendanceSheet));
 // Check-in requires auth - no cache
 r.post('/:id/check-in', auth, checkInLimiter, validate({ params: idParams, body: checkInBody }), h(s.checkIn));
 

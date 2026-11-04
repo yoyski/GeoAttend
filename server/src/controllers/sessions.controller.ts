@@ -44,3 +44,11 @@ export const live = async (req: Request, res: Response) => {
   const s = await getOwned(currentUser(req), id(req));
   liveHub.subscribe(s.id, res);
 };
+
+// Participant view attendance sheet - allows viewing records without location check
+// Uses linkToken from URL, not database _id
+export const viewAttendanceSheet = async (req: Request, res: Response) => {
+  const linkToken = id(req);
+  const data = await sessions.getAttendanceSheetData(linkToken);
+  ok(res, data);
+};

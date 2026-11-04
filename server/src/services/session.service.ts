@@ -163,3 +163,38 @@ export async function setSheet(user: UserDoc, id: string, sheet: Record<string, 
   await s.save();
   return sheet;
 }
+
+/**
+ * Get attendance sheet data for participants to view
+ * Uses linkToken instead of database _id
+ * No location verification required - read-only access
+ */
+export async function getAttendanceSheetData(linkToken: string) {
+  const session = await Session.findOne({ linkToken });
+  if (!session) {
+    throw new HttpError(404, 'NOT_FOUND', 'Session not found.');
+  }
+
+  // Get all check-ins for this session
+  const checkIns = await CheckIn.find({ session: session._id })
+    .populate('user', 'name email avatar')
+    .sort({ checkedInAt: 1 })
+    .lean();
+
+  // Return session info and records
+  return {
+    session: creatorDto(session, checkIns.length),
+    records: checkIns.map((ci: any) => ({
+      id: ci._id.toString(),
+      name: ci.user?.name || ci.customFields?.name || 'Anonymous',
+      email: ci.user?.email || ci.customFields?.email || '',
+      time: ci.checkedInAt,
+      late: ci.late,
+      manual: ci.manual || false,
+      distance: ci.distance,
+      accuracy: ci.accuracy,
+      customFields: ci.customFields || {},
+      signature: ci.signature || null,
+    })),
+  };
+}
