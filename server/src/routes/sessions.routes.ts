@@ -16,8 +16,8 @@ const r = Router();
 // Participant - cache nearby sessions for 30 seconds
 r.post('/nearby', optionalAuth, nearbyLimiter, cacheStrategies.short, validate({ body: nearbyBody }), h(s.nearbyList));
 
-// Creator (fixed paths first, so "mine" is never read as an :id) - require auth, cache 1 min
-r.get('/mine', auth, cacheStrategies.userPrivate, validate({ query: listMineQuery }), h(s.listMine));
+// Creator (fixed paths first, so "mine" is never read as an :id) - require auth, no cache for list (need fresh data)
+r.get('/mine', auth, cacheStrategies.realtime, validate({ query: listMineQuery }), h(s.listMine));
 r.get('/mine/:id', auth, cacheStrategies.userPrivate, validate({ params: idParams }), h(s.getMine));
 r.post('/', auth, validate({ body: createSessionBody }), h(s.create));
 
