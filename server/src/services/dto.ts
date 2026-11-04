@@ -34,6 +34,7 @@ export function creatorDto(s: SessionDoc, checkInCount: number) {
 export function participantDto(s: SessionDoc, distance: number, checkedIn: boolean) {
   return {
     id: s.id as string,
+    linkToken: s.linkToken,  // Include linkToken for sheet viewing
     title: s.title,
     description: s.description,
     venue: s.venue,

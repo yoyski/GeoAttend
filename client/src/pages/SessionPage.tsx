@@ -250,144 +250,144 @@ export function SessionPage() {
 
             {/* Laptop and up: map on the left (stays in view), check-in card on the right */}
             <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start">
-            <div className="relative aspect-[16/10] max-h-[min(60dvh,520px)] w-full overflow-hidden rounded-3xl border border-[var(--line)] shadow-[var(--shadow-md)] lg:max-h-none lg:[@media(min-height:720px)]:sticky lg:[@media(min-height:720px)]:top-5">
-              <LeafletMap
-                venue={{ lat: s.location.lat, lng: s.location.lng, radius: s.radius }}
-                user={fix}
-                inside={s.distance <= s.radius}
-              />
-              <div className="pointer-events-none absolute left-3 top-3 z-[500] flex flex-wrap gap-1.5">
-                <Badge variant={s.distance <= s.radius ? 'success' : 'destructive'} showDot className="shadow-[var(--shadow-sm)]">
-                  {s.distance <= s.radius ? 'Inside range' : 'Outside range'}
-                </Badge>
-                <Badge variant="secondary" className="bg-[var(--card)] shadow-[var(--shadow-sm)]">
-                  {s.distance} m away
-                </Badge>
+              <div className="relative aspect-[16/10] max-h-[min(60dvh,520px)] w-full overflow-hidden rounded-3xl border border-[var(--line)] shadow-[var(--shadow-md)] lg:max-h-none lg:[@media(min-height:720px)]:sticky lg:[@media(min-height:720px)]:top-5">
+                <LeafletMap
+                  venue={{ lat: s.location.lat, lng: s.location.lng, radius: s.radius }}
+                  user={fix}
+                  inside={s.distance <= s.radius}
+                />
+                <div className="pointer-events-none absolute left-3 top-3 z-[500] flex flex-wrap gap-1.5">
+                  <Badge variant={s.distance <= s.radius ? 'success' : 'destructive'} showDot className="shadow-[var(--shadow-sm)]">
+                    {s.distance <= s.radius ? 'Inside range' : 'Outside range'}
+                  </Badge>
+                  <Badge variant="secondary" className="bg-[var(--card)] shadow-[var(--shadow-sm)]">
+                    {s.distance} m away
+                  </Badge>
+                </div>
               </div>
-            </div>
 
-            {checkedIn ? (
-              /* 3. Success */
-              <Card className="overflow-hidden">
-                <div
-                  className="px-4 pb-6 pt-8 text-center sm:px-6"
-                  style={{ background: 'linear-gradient(180deg, color-mix(in srgb, var(--ok) 12%, transparent), transparent)' }}
-                >
-                  <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[var(--okt)] text-[34px] text-[var(--ok)] ring-8 ring-[color-mix(in_srgb,var(--ok)_12%,transparent)]">
-                    <i className="ti ti-check" aria-hidden="true" />
-                  </span>
-                  <h2 className="mt-4 text-xl font-bold">
-                    {done?.late ? 'Checked in, a little late' : "You're checked in"}
-                  </h2>
-                  <p className="mt-1 text-sm" style={mut}>
-                    {done ? `Recorded at ${timeOf(done.at)}` : 'You are marked present for this session.'}
-                  </p>
-                  {done?.late && (
-                    <Badge variant="warning" className="mt-3">
-                      Marked late
-                    </Badge>
-                  )}
-                </div>
-                <div className="grid grid-cols-3 divide-x divide-[var(--line)] border-t border-[var(--line)] text-center">
-                  <Fact label="Time" value={done ? timeOf(done.at) : 'Present'} />
-                  <Fact label="Distance" value={`${s.distance} m`} />
-                  <Fact label="GPS" value={`±${accuracy} m`} />
-                </div>
-                <CardFooter className="flex-col gap-2 pt-4">
-                  <Button asChild className="w-full">
-                    <Link to={`/s/${id}/sheet`}>
-                      <i className="ti ti-file-text text-[18px]" aria-hidden="true" />
-                      View attendance sheet
-                    </Link>
-                  </Button>
-                  <Button asChild variant="ghost" className="w-full">
-                    <Link to={user ? '/attend' : '/'}>Back to home</Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            ) : (
-              /* 3. Check-in form */
-              <Card>
-                <CardHeader>
-                  <CardTitle>Check in</CardTitle>
-                  <CardDescription>
-                    {VERIFY_LABEL[verification] ?? 'Location only'} · GPS ±{accuracy} m
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent className="space-y-5">
-                  {verification === 'passcode' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="passcode">Passcode</Label>
-                      <Input
-                        id="passcode"
-                        type="text"
-                        value={passcode}
-                        onChange={(e) => setPasscode(e.target.value)}
-                        autoComplete="off"
-                        placeholder="Ask the organizer"
-                        className="font-mono tracking-widest"
-                      />
-                    </div>
-                  )}
-                  {verification === 'email' && (
-                    <p className="flex items-start gap-2 rounded-xl bg-[var(--tint)] px-3 py-2.5 text-[13px] text-[var(--pine)]">
-                      <i className="ti ti-mail-check mt-0.5" aria-hidden="true" />
-                      Your account email must be on the organizer&apos;s authorized list.
+              {checkedIn ? (
+                /* 3. Success */
+                <Card className="overflow-hidden">
+                  <div
+                    className="px-4 pb-6 pt-8 text-center sm:px-6"
+                    style={{ background: 'linear-gradient(180deg, color-mix(in srgb, var(--ok) 12%, transparent), transparent)' }}
+                  >
+                    <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[var(--okt)] text-[34px] text-[var(--ok)] ring-8 ring-[color-mix(in_srgb,var(--ok)_12%,transparent)]">
+                      <i className="ti ti-check" aria-hidden="true" />
+                    </span>
+                    <h2 className="mt-4 text-xl font-bold">
+                      {done?.late ? 'Checked in, a little late' : "You're checked in"}
+                    </h2>
+                    <p className="mt-1 text-sm" style={mut}>
+                      {done ? `Recorded at ${timeOf(done.at)}` : 'You are marked present for this session.'}
                     </p>
-                  )}
+                    {done?.late && (
+                      <Badge variant="warning" className="mt-3">
+                        Marked late
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 divide-x divide-[var(--line)] border-t border-[var(--line)] text-center">
+                    <Fact label="Time" value={done ? timeOf(done.at) : 'Present'} />
+                    <Fact label="Distance" value={`${s.distance} m`} />
+                    <Fact label="GPS" value={`±${accuracy} m`} />
+                  </div>
+                  <CardFooter className="flex-col gap-2 pt-4">
+                    <Button asChild className="w-full">
+                      <Link to={`/s/${s?.linkToken || id}/sheet`}>
+                        <i className="ti ti-file-text text-[18px]" aria-hidden="true" />
+                        View attendance sheet
+                      </Link>
+                    </Button>
+                    <Button asChild variant="ghost" className="w-full">
+                      <Link to={user ? '/attend' : '/'}>Back to home</Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ) : (
+                /* 3. Check-in form */
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Check in</CardTitle>
+                    <CardDescription>
+                      {VERIFY_LABEL[verification] ?? 'Location only'} · GPS ±{accuracy} m
+                    </CardDescription>
+                  </CardHeader>
 
-                  {/* Built-in signature column - only show if enabled in sheet */}
-                  {s.sheet?.cols?.find((c: { k: string; on: number }) => c.k === 'sign' && c.on === 1) && (
-                    <div className="space-y-2">
-                      <Label>Signature</Label>
-                      <SignaturePad
-                        value={customFields['_signature'] || ''}
-                        onChange={(dataUrl) => setCustomFields({ ...customFields, _signature: dataUrl })}
-                      />
-                    </div>
-                  )}
-
-                  {/* Custom columns configured by creator */}
-                  {s.sheet?.cols
-                    ?.filter((c: { k: string; on: number }) => c.k === 'custom' && c.on === 1)
-                    .map((c: { id: string; l: string; inputType?: string }) => (
-                      <div key={c.id} className="space-y-2">
-                        {c.inputType === 'signature' ? (
-                          <>
-                            <Label>{c.l}</Label>
-                            <SignaturePad
-                              value={customFields[c.id] || ''}
-                              onChange={(dataUrl) => setCustomFields({ ...customFields, [c.id]: dataUrl })}
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <Label htmlFor={`cf-${c.id}`}>{c.l}</Label>
-                            <Input
-                              id={`cf-${c.id}`}
-                              type={c.inputType === 'number' ? 'number' : 'text'}
-                              value={customFields[c.id] || ''}
-                              onChange={(e) => setCustomFields({ ...customFields, [c.id]: e.target.value })}
-                              autoComplete="off"
-                              placeholder={c.inputType === 'number' ? 'Enter number' : 'Enter text'}
-                            />
-                          </>
-                        )}
+                  <CardContent className="space-y-5">
+                    {verification === 'passcode' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="passcode">Passcode</Label>
+                        <Input
+                          id="passcode"
+                          type="text"
+                          value={passcode}
+                          onChange={(e) => setPasscode(e.target.value)}
+                          autoComplete="off"
+                          placeholder="Ask the organizer"
+                          className="font-mono tracking-widest"
+                        />
                       </div>
-                    ))}
+                    )}
+                    {verification === 'email' && (
+                      <p className="flex items-start gap-2 rounded-xl bg-[var(--tint)] px-3 py-2.5 text-[13px] text-[var(--pine)]">
+                        <i className="ti ti-mail-check mt-0.5" aria-hidden="true" />
+                        Your account email must be on the organizer&apos;s authorized list.
+                      </p>
+                    )}
 
-                  <ErrorBox error={error} />
-                </CardContent>
+                    {/* Built-in signature column - only show if enabled in sheet */}
+                    {s.sheet?.cols?.find((c: { k: string; on: number }) => c.k === 'sign' && c.on === 1) && (
+                      <div className="space-y-2">
+                        <Label>Signature</Label>
+                        <SignaturePad
+                          value={customFields['_signature'] || ''}
+                          onChange={(dataUrl) => setCustomFields({ ...customFields, _signature: dataUrl })}
+                        />
+                      </div>
+                    )}
 
-                <CardFooter>
-                  <Button type="button" size="lg" className="w-full" onClick={checkIn} disabled={busy}>
-                    <i className={`ti ${busy ? 'ti-loader-2 animate-spin' : 'ti-map-pin-check'} text-[20px]`} aria-hidden="true" />
-                    {busy ? 'Checking in…' : user ? 'Check in now' : 'Log in to check in'}
-                  </Button>
-                </CardFooter>
-              </Card>
-            )}
+                    {/* Custom columns configured by creator */}
+                    {s.sheet?.cols
+                      ?.filter((c: { k: string; on: number }) => c.k === 'custom' && c.on === 1)
+                      .map((c: { id: string; l: string; inputType?: string }) => (
+                        <div key={c.id} className="space-y-2">
+                          {c.inputType === 'signature' ? (
+                            <>
+                              <Label>{c.l}</Label>
+                              <SignaturePad
+                                value={customFields[c.id] || ''}
+                                onChange={(dataUrl) => setCustomFields({ ...customFields, [c.id]: dataUrl })}
+                              />
+                            </>
+                          ) : (
+                            <>
+                              <Label htmlFor={`cf-${c.id}`}>{c.l}</Label>
+                              <Input
+                                id={`cf-${c.id}`}
+                                type={c.inputType === 'number' ? 'number' : 'text'}
+                                value={customFields[c.id] || ''}
+                                onChange={(e) => setCustomFields({ ...customFields, [c.id]: e.target.value })}
+                                autoComplete="off"
+                                placeholder={c.inputType === 'number' ? 'Enter number' : 'Enter text'}
+                              />
+                            </>
+                          )}
+                        </div>
+                      ))}
+
+                    <ErrorBox error={error} />
+                  </CardContent>
+
+                  <CardFooter>
+                    <Button type="button" size="lg" className="w-full" onClick={checkIn} disabled={busy}>
+                      <i className={`ti ${busy ? 'ti-loader-2 animate-spin' : 'ti-map-pin-check'} text-[20px]`} aria-hidden="true" />
+                      {busy ? 'Checking in…' : user ? 'Check in now' : 'Log in to check in'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              )}
             </div>
           </>
         )}

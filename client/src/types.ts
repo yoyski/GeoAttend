@@ -5,7 +5,7 @@ export interface LatLng { lat: number; lng: number }
 export interface Fix extends LatLng { accuracy: number }
 
 export interface ParticipantSession {
-  id: string; title: string; description: string; venue: string;
+  id: string; linkToken: string; title: string; description: string; venue: string;
   startsAt: string; endsAt: string; status: Status; location: LatLng; radius: number;
   verification: Verification; distance: number; checkedIn: boolean; sheet?: any; lateAfterTime?: string;
 }
