@@ -13,7 +13,7 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 // Helper to handle Google OAuth on both web and mobile
 const handleGoogleLogin = async () => {
   const isNative = Capacitor.isNativePlatform();
-  const googleUrl = `${API_URL}/auth/google`;
+  const googleUrl = `${API_URL}/auth/google${isNative ? '?mobile=true' : ''}`;
 
   if (isNative) {
     // On mobile, use Capacitor Browser to open OAuth in-app

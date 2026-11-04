@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Browser } from '@capacitor/browser';
+import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 
 /**
  * OAuth callback page that receives the JWT token from Google OAuth
- * and stores it in a cookie for subsequent API requests
+ * and stores it in a cookie for subsequent API requests.
+ * 
+ * On mobile (APK), this page is reached via deep link (geoattend://auth/callback?token=xxx)
+ * which automatically closes the browser and returns to the app.
  */
 export function AuthCallbackPage() {
     const navigate = useNavigate();
@@ -31,12 +34,8 @@ export function AuthCallbackPage() {
                 // ignore
             }
 
-            // Close the in-app browser on mobile
-            if (isNative) {
-                Browser.close().catch(() => {
-                    // Ignore errors if browser is already closed
-                });
-            }
+            // On mobile, deep linking automatically closes the browser
+            // No need to call Browser.close() as we're now in the app context
 
             // Use window.location.href for a full page reload to ensure cookie is available
             window.location.href = '/attend';

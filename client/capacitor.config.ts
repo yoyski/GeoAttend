@@ -11,6 +11,11 @@ const config: CapacitorConfig = {
       androidScaleType: 'CENTER_CROP',
       showSpinner: false
     }
+  },
+  // Register custom URL scheme for deep linking (OAuth callback)
+  server: {
+    hostname: 'geoattend.app',
+    androidScheme: 'https'
   }
 };
 

@@ -1,112 +1,73 @@
 # Building Android APK for GeoAttend
 
-This guide will help you build an Android APK from the GeoAttend web app using Capacitor.
-
 ## Prerequisites
+- Android Studio installed
+- JAVA_HOME set to Android Studio's JBR: `C:\Program Files\Android\Android Studio\jbr`
+- Capacitor CLI installed (`npm install @capacitor/cli @capacitor/core`)
 
-1. **Install Android Studio**: Download from [https://developer.android.com/studio](https://developer.android.com/studio)
-2. **Install Java JDK 17**: Required for Android builds
-3. **Set up environment variables**:
-   - `ANDROID_HOME` or `ANDROID_SDK_ROOT` pointing to your Android SDK location
-   - Add Android SDK tools to your PATH
-
-## Quick Build Steps
+## Build Steps
 
 ### 1. Build the web app
-```bash
+```powershell
 cd client
 npm run build
 ```
 
-### 2. Sync to Android
-```bash
+### 2. Sync with Capacitor
+```powershell
 npx cap sync android
 ```
 
-### 3. Open in Android Studio
-```bash
-npx cap open android
-```
+This copies the web build to the Android project and updates plugins.
 
-### 4. Build APK in Android Studio
-1. In Android Studio, go to **Build** → **Build Bundle(s) / APK(s)** → **Build APK(s)**
-2. Wait for the build to complete
-3. Click "locate" in the notification to find your APK
-4. The APK will be at: `android/app/build/outputs/apk/debug/app-debug.apk`
-
-## Build Release APK (for Production)
-
-### 1. Generate a signing key (first time only)
-```bash
+### 3. Build the APK
+```powershell
+$env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"
 cd android
-keytool -genkey -v -keystore geoattend-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias geoattend
+.\gradlew assembleDebug
 ```
 
-Save the password securely!
+### 4. Install on device
+The APK will be at: `client/android/app/build/outputs/apk/debug/app-debug.apk`
 
-### 2. Configure signing in Android Studio
-1. Go to **Build** → **Generate Signed Bundle / APK**
-2. Select **APK**
-3. Select your keystore file and enter credentials
-4. Choose **release** build variant
-5. Click **Finish**
-
-### 3. The release APK will be at:
-```
-android/app/build/outputs/apk/release/app-release.apk
-```
-
-## Command Line Build (Alternative)
-
-### Debug APK:
-```bash
-cd android
-./gradlew assembleDebug
-```
-
-### Release APK:
-```bash
-cd android
-./gradlew assembleRelease
+Transfer to your phone and install, or use:
+```powershell
+.\gradlew installDebug
 ```
 
 ## Important Notes
 
-- **API URL**: The app is configured to use `https://geo-attend-pi9y.vercel.app` as the backend
-- **Permissions**: The app will automatically request location permissions
-- **App Size**: The APK will be approximately 10-15 MB
-- **Minimum Android Version**: Android 5.0 (API 21)
+### Environment Configuration
+- The APK uses `.env.production` settings
+- `VITE_API_URL=https://geoattend-b150.onrender.com/api` (points to production server)
+- **Do NOT set `server.url` in `capacitor.config.ts`** - this causes a black screen
 
-## Updating the App
+### Google OAuth on Mobile
+- Uses deep linking with custom URL scheme: `https://geoattend.app`
+- When user signs in with Google:
+  1. Opens in-app browser
+  2. User authenticates with Google
+  3. Server redirects to `https://geoattend.app/auth/callback?token=xxx`
+  4. Android deep link automatically closes browser and opens app
+  5. App sets the token cookie and redirects to `/attend`
 
-When you make changes to the web app:
-
-1. Build the web app: `npm run build`
-2. Sync changes: `npx cap sync android`
-3. Rebuild APK in Android Studio
+### Location Permissions
+- Location permissions are configured in `AndroidManifest.xml`
+- Uses `@capacitor/geolocation` plugin for GPS access
+- App will request permission on first location access
 
 ## Troubleshooting
 
-### "Android SDK not found"
-Set the `ANDROID_HOME` environment variable:
-```bash
-# Windows
-setx ANDROID_HOME "C:\Users\YourName\AppData\Local\Android\Sdk"
+### Black screen on app launch
+- Make sure `server.url` is NOT set in `capacitor.config.ts`
+- Rebuild with `npm run build` and `npx cap sync android`
 
-# Mac/Linux
-export ANDROID_HOME=$HOME/Library/Android/sdk
-```
+### OAuth browser doesn't close
+- Deep linking is configured with `https://geoattend.app` scheme
+- Check `AndroidManifest.xml` has the intent-filter for deep links
+- Server adds `?mobile=true` query parameter to detect mobile requests
 
-### "Gradle build failed"
-1. Open the project in Android Studio
-2. Go to **File** → **Sync Project with Gradle Files**
-3. Try building again
-
-### App crashes on startup
-Check the API URL in `capacitor.config.ts` matches your deployed backend.
-
-## Resources
-
-- [Capacitor Documentation](https://capacitorjs.com/docs)
-- [Android Studio Guide](https://developer.android.com/studio/intro)
-- [Publishing to Google Play](https://capacitorjs.com/docs/android/deploying-to-google-play)
+### Location permission denied
+- Go to Android Settings → Apps → GeoAttend → Permissions
+- Enable Location permission
+- Make sure device location is turned on

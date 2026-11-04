@@ -172,9 +172,17 @@ export const googleCallback = async (req: Request, res: Response) => {
 
     const token = signJwt(user);
 
-    // For OAuth with separate domains (Vercel client + Render server),
-    // we need to pass the token via URL so the client can set it as a cookie
-    // This works because the redirect goes directly to the client domain
+    // Check if request is from mobile app (Capacitor sends a specific User-Agent)
+    const userAgent = req.headers['user-agent'] || '';
+    const isMobileApp = userAgent.includes('Capacitor') || req.query.mobile === 'true';
+
+    if (isMobileApp) {
+      // Redirect to deep link for mobile app
+      // This will automatically close the browser and return to the app
+      return res.redirect(`https://geoattend.app/auth/callback?token=${token}`);
+    }
+
+    // For web (Vercel), pass token via URL so client can set it as a cookie
     res.redirect(`${env.CLIENT_URL}/auth/callback?token=${token}`);
   })(req, res);
 };
