@@ -276,17 +276,10 @@ export function SessionPage() {
                     <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[var(--okt)] text-[34px] text-[var(--ok)] ring-8 ring-[color-mix(in_srgb,var(--ok)_12%,transparent)]">
                       <i className="ti ti-check" aria-hidden="true" />
                     </span>
-                    <h2 className="mt-4 text-xl font-bold">
-                      {done?.late ? 'Checked in, a little late' : "You're checked in"}
-                    </h2>
+                    <h2 className="mt-4 text-xl font-bold">You're checked in</h2>
                     <p className="mt-1 text-sm" style={mut}>
                       {done ? `Recorded at ${timeOf(done.at)}` : 'You are marked present for this session.'}
                     </p>
-                    {done?.late && (
-                      <Badge variant="warning" className="mt-3">
-                        Marked late
-                      </Badge>
-                    )}
                   </div>
                   <div className="grid grid-cols-3 divide-x divide-[var(--line)] border-t border-[var(--line)] text-center">
                     <Fact label="Time" value={done ? timeOf(done.at) : 'Present'} />

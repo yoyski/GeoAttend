@@ -62,7 +62,6 @@ export function CreatePage() {
       verification: 'location' as Verification,
       passcode: genPasscode(),
       emails: [] as string[],
-      lateAfterTime: '', // HH:MM format
     };
     const draft = loadDraft<Partial<typeof base>>('create');
     return draft ? { ...base, ...draft } : base;
@@ -145,7 +144,6 @@ export function CreatePage() {
         lng: f.lng,
         radius: f.radius,
         verification: f.verification,
-        ...(f.lateAfterTime ? { lateAfterTime: new Date(`${f.dt}T${f.lateAfterTime}`).toISOString() } : {}),
         ...(f.verification === 'passcode' ? { passcode: f.passcode } : {}),
         ...(f.verification === 'email' ? { allowedEmails: f.emails } : {}),
       });
@@ -234,20 +232,6 @@ export function CreatePage() {
                 <Label htmlFor="c-end">End</Label>
                 <Input id="c-end" type="time" className={dateCls} value={f.te} onChange={(e) => set('te', e.target.value)} />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="lateTime">Mark late after (optional)</Label>
-              <Input
-                id="lateTime"
-                type="time"
-                className={dateCls}
-                value={f.lateAfterTime}
-                onChange={(e) => set('lateAfterTime', e.target.value)}
-              />
-              <p className="text-[13px]" style={mut}>
-                Check-ins after this time are marked late. Leave empty to skip.
-              </p>
             </div>
           </CardContent>
         </Card>

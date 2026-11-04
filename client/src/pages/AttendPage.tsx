@@ -305,18 +305,15 @@ export function AttendPage() {
                             <li key={h.id} className="relative">
                               <span
                                 aria-hidden="true"
-                                className={
-                                  'absolute -left-[31px] top-4 grid h-5 w-5 place-items-center rounded-full text-[11px] ring-4 ring-[var(--bg)] ' +
-                                  (h.late ? 'bg-[var(--sigt)] text-[var(--ink)]' : 'bg-[var(--okt)] text-[var(--ok)]')
-                                }
+                                className="absolute -left-[31px] top-4 grid h-5 w-5 place-items-center rounded-full bg-[var(--okt)] text-[11px] text-[var(--ok)] ring-4 ring-[var(--bg)]"
                               >
-                                <i className={`ti ${h.late ? 'ti-clock' : 'ti-check'}`} />
+                                <i className="ti ti-check" />
                               </span>
                               <div className="rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)]">
                                 <div className="flex items-start justify-between gap-2.5">
                                   <h4 className="min-w-0 truncate text-[16px] font-semibold tracking-tight">{h.title}</h4>
-                                  <Badge variant={h.late ? 'warning' : 'success'} showDot className="shrink-0">
-                                    {h.late ? 'Late' : 'Present'}
+                                  <Badge variant="success" showDot className="shrink-0">
+                                    Present
                                   </Badge>
                                 </div>
                                 <p className="mt-0.5 truncate text-[13px]" style={mut}>
