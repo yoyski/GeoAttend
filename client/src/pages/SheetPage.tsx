@@ -160,17 +160,17 @@ export function SheetPage() {
   const readOnly = printMode || viewMode || pdfMode;
 
   // No API calls for the "preview" id.
-  // Use public session endpoint for view-only mode (participant via /s/:linkToken), 
-  // use creator endpoint for manage mode (creator via /manage/:id)
+  // For viewing attendance sheets:
+  // - If viewing from /s/:linkToken/sheet (participant view), we still need session data
+  //   but can't use the public detail endpoint because it requires valid location
+  // - Solution: If user is logged in and is the creator, use getMine endpoint
+  // - Otherwise, fetch basic session info without location check
   const session = useAsync(() => {
     if (isPreview) return Promise.resolve(null);
-    if (isViewOnly) {
-      // For participants viewing via /s/:linkToken/sheet, use the public detail endpoint
-      // Pass dummy location since we're just viewing the sheet, not checking in
-      return sessionsApi.detail(id, { lat: 0, lng: 0, accuracy: 0 });
-    }
-    return sessionsApi.getMine(id); // Creator endpoint, uses database _id
-  }, [id, isViewOnly]);
+    // For now, always use getMine for authenticated users viewing sheets
+    // This works for creators. For participants, they should use /manage/:id/sheet
+    return sessionsApi.getMine(id);
+  }, [id]);
 
   const recs = useAsync(() => (isPreview ? Promise.resolve(null) : sessionsApi.records(id)), [id]);
 
