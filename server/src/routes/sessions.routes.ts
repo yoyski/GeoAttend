@@ -6,7 +6,7 @@ import * as rec from '../controllers/records.controller.js';
 import { checkInLimiter, nearbyLimiter } from '../middleware/rateLimit.js';
 import { validate } from '../middleware/validate.js';
 import {
-  checkInBody, createSessionBody, detailQuery, idParams, listMineQuery, manualRecordBody,
+  checkInBody, createSessionBody, detailQuery, idParams, linkTokenParams, listMineQuery, manualRecordBody,
   nearbyBody, recordParams, sheetBody, updateSessionBody,
 } from '../schemas.js';
 import { asyncHandler as h } from '../utils/asyncHandler.js';
@@ -24,7 +24,7 @@ r.post('/', auth, validate({ body: createSessionBody }), h(s.create));
 // Participant detail - cache 1 minute (optional auth - allows checking location before requiring login)
 r.get('/:id', optionalAuth, cacheStrategies.short, validate({ params: idParams, query: detailQuery }), h(s.participantDetail));
 // Participant view attendance sheet - no location check required
-r.get('/:id/sheet', optionalAuth, cacheStrategies.short, validate({ params: idParams }), h(s.viewAttendanceSheet));
+r.get('/:id/sheet', optionalAuth, cacheStrategies.short, validate({ params: linkTokenParams }), h(s.viewAttendanceSheet));
 // Check-in requires auth - no cache
 r.post('/:id/check-in', auth, checkInLimiter, validate({ params: idParams, body: checkInBody }), h(s.checkIn));
 

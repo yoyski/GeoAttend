@@ -4,6 +4,7 @@ import { MAX_RADIUS } from './config/env.js';
 
 export const objectId = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid id');
 export const idParams = z.object({ id: objectId });
+export const linkTokenParams = z.object({ id: z.string().min(1) }); // linkToken can be any non-empty string
 export const recordParams = z.object({ id: objectId, recordId: objectId });
 
 const email = z.string().trim().toLowerCase().email().max(254);
