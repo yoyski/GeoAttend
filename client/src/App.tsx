@@ -1,9 +1,11 @@
 import { lazy, Suspense, useState, useEffect } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { LoginGate } from './components/LoginGate';
 import { SplashScreen } from './components/SplashScreen';
 import { useAuth } from './hooks/useAuth';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 // Lazy load all page components
 const AccountPage = lazy(() => import('./pages/AccountPage').then(m => ({ default: m.AccountPage })));
@@ -67,6 +69,37 @@ export default function App() {
     // Hide splash after 2.9 seconds (2.4s visible + 0.5s fade)
     const timer = setTimeout(() => setShowSplash(false), 2900);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Handle deep links (for OAuth callback on mobile)
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const handleDeepLink = CapacitorApp.addListener('appUrlOpen', (data) => {
+      console.log('Deep link received:', data.url);
+
+      // Parse the deep link URL: geoattend://auth/callback?token=xxx
+      const url = new URL(data.url);
+
+      if (url.hostname === 'auth' && url.pathname === '/callback') {
+        const token = url.searchParams.get('token');
+
+        if (token) {
+          // Set the token as a cookie
+          const cookieString = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; samesite=lax; secure`;
+          document.cookie = cookieString;
+
+          console.log('Token from deep link set as cookie');
+
+          // Navigate to attend page
+          window.location.href = '/attend';
+        }
+      }
+    });
+
+    return () => {
+      handleDeepLink.remove();
+    };
   }, []);
 
   return (

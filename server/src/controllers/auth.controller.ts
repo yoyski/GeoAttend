@@ -177,9 +177,9 @@ export const googleCallback = async (req: Request, res: Response) => {
     const isMobileApp = userAgent.includes('Capacitor') || req.query.mobile === 'true';
 
     if (isMobileApp) {
-      // Redirect to deep link for mobile app
+      // Redirect to custom scheme deep link for mobile app
       // This will automatically close the browser and return to the app
-      return res.redirect(`https://geoattend.app/auth/callback?token=${token}`);
+      return res.redirect(`geoattend://auth/callback?token=${token}`);
     }
 
     // For web (Vercel), pass token via URL so client can set it as a cookie
