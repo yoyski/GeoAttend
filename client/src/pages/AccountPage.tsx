@@ -82,6 +82,8 @@ export function AccountPage() {
   const [dlg, setDlg] = useState<Dlg>(null);
   const [uploading, setUploading] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  // Delete account lives behind "Advanced" so it is never next to Sign out.
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -137,8 +139,9 @@ export function AccountPage() {
     if (which === 'delete') {
       void run(async () => {
         await meApi.remove();
-        // After deleting account, logout and redirect to home
+        // After deleting account, logout and clear cookie
         await authApi.logout();
+        document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax';
         window.location.href = '/';
       });
     } else if (which === 'signout') {
@@ -146,9 +149,13 @@ export function AccountPage() {
       void (async () => {
         try {
           await authApi.logout();
+          // Clear the token cookie on client side as well
+          document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax';
           window.location.href = '/';
         } catch (err) {
           console.error('Logout failed:', err);
+          // Even if logout API fails, clear cookie and redirect
+          document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax';
           window.location.href = '/';
         }
       })();
@@ -361,17 +368,38 @@ export function AccountPage() {
               </CardContent>
             </Card>
 
-            <div className="flex flex-wrap items-center gap-x-3.5 gap-y-3 rounded-2xl border border-[color-mix(in_srgb,var(--err)_30%,transparent)] bg-[var(--errt)] p-4">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--card)] text-lg text-[var(--err)]">
-                <i className="ti ti-trash" aria-hidden="true" />
-              </span>
-              <div className="min-w-0 flex-1 basis-[180px]">
-                <p className="text-sm font-semibold text-[var(--err)]">Delete account</p>
-                <p className="text-[13px] text-[var(--mut)]">Removes your account and all your sessions. Cannot be undone.</p>
-              </div>
-              <Button type="button" variant="destructive" size="sm" className="w-full min-[480px]:w-auto" onClick={() => setDlg('delete')}>
-                Delete
-              </Button>
+            {/* Advanced: collapsed by default, so Delete account is reachable but never confused with Sign out */}
+            <div>
+              <button
+                type="button"
+                aria-expanded={showAdvanced}
+                aria-controls="advanced-settings"
+                onClick={() => setShowAdvanced((v) => !v)}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-1 py-1 text-[13px] font-semibold text-[var(--mut)] hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]"
+              >
+                <i className={`ti ${showAdvanced ? 'ti-chevron-down' : 'ti-chevron-right'} text-[14px]`} aria-hidden="true" />
+                Advanced
+              </button>
+
+              {showAdvanced && (
+                <div
+                  id="advanced-settings"
+                  className="mt-3 flex flex-wrap items-center gap-x-3.5 gap-y-3 rounded-2xl border border-[color-mix(in_srgb,var(--err)_30%,transparent)] bg-[var(--errt)] p-4"
+                >
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--card)] text-lg text-[var(--err)]">
+                    <i className="ti ti-trash" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1 basis-[180px]">
+                    <p className="text-sm font-semibold text-[var(--err)]">Delete account</p>
+                    <p className="text-[13px] text-[var(--mut)]">
+                      This is not Sign out. It permanently removes your account and all your sessions. Cannot be undone.
+                    </p>
+                  </div>
+                  <Button type="button" variant="destructive" size="sm" className="w-full min-[480px]:w-auto" onClick={() => setDlg('delete')}>
+                    Delete
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>

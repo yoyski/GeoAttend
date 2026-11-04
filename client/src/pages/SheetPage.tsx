@@ -36,8 +36,8 @@ const SIZES = {
 type PaperKey = keyof typeof SIZES;
 const PAPER_ORDER: PaperKey[] = ['short', 'a4', 'long', 'legal', 'a5'];
 
-type ColKey = 'no' | 'name' | 'company' | 'email' | 'time' | 'sign' | 'custom';
-type InputType = 'text' | 'number' | 'signature';
+type ColKey = 'no' | 'name' | 'email' | 'time' | 'custom';
+type InputType = 'text' | 'number';
 type Col = { id: string; k: ColKey; l: string; on: 0 | 1; inputType?: InputType };
 type Cfg = {
   title: string;
@@ -54,9 +54,33 @@ type Cfg = {
 };
 
 const MAX_COLS = 12;
-const ROW_OPTIONS = [10, 15, 20, 25, 30, 35, 40, 50];
-const COL_W: Partial<Record<ColKey, number>> = { no: 44, time: 90, sign: 170 };
+const ROW_OPTIONS = [5, 10, 15, 20, 25, 30, 35, 40, 50];
+const COL_W: Partial<Record<ColKey, number>> = { no: 44, time: 90 };
 const uid = () => Math.random().toString(36).slice(2, 8);
+
+/** Column kinds that older saved sheets may contain but that no longer exist. */
+const REMOVED_COLS = ['company', 'sign'];
+
+/** Width at which the editor switches to two columns (preview left, controls right). */
+const SPLIT_W = 900;
+/** Space kept free above/below the sticky preview (top offset + page navigation bar). */
+const PREVIEW_RESERVE = 112;
+
+/** Approximate height used by the header, details block and table head (only used to suggest a row count). */
+const FIXED_BLOCKS = 83 + 142 + 20 + 37 + 76;
+/** Comfortable height of one writing row in px, border included. */
+const TARGET_ROW = 24;
+/** Smallest a row is allowed to be before the page runs out of room. */
+const ROW_MIN = 18;
+
+/** Suggested rows per page for a paper size and orientation: as many comfortable rows as fit, in steps of 5. */
+function rowsFor(paper: PaperKey, land: boolean): number {
+  const sz = SIZES[paper];
+  const H = land ? sz.w : sz.h;
+  const padY = H < 900 ? 30 : 60;
+  const avail = H - (padY * 2 + FIXED_BLOCKS) - 24;
+  return Math.max(5, Math.floor(avail / TARGET_ROW / 5) * 5);
+}
 
 const timeOf = (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const dayOf = (d: Date) => d.toLocaleDateString([], { month: 'short', day: 'numeric' });
@@ -75,12 +99,10 @@ function newCfg(s: Seed | null): Cfg {
     cols: [
       { id: 'no', k: 'no', l: 'No', on: 1 },
       { id: 'name', k: 'name', l: 'Name', on: 1 },
-      { id: 'company', k: 'company', l: 'Company', on: 0 },
       { id: 'email', k: 'email', l: 'Email', on: 1 },
       { id: 'time', k: 'time', l: 'Time in', on: 1 },
-      { id: 'sign', k: 'sign', l: 'Signature', on: 1 },
     ],
-    rows: 25,
+    rows: rowsFor('a4', false),
     det: 1,
     f: [
       ['Date', (s ? new Date(s.startsAt) : new Date()).toLocaleDateString('en-US')],
@@ -106,9 +128,14 @@ function norm(raw: unknown): Cfg | null {
   const c = raw as Partial<Cfg> | null;
   if (!c || typeof c.title !== 'string' || !Array.isArray(c.cols) || !Array.isArray(c.f)) return null;
   if (!c.cols.every((x) => x && typeof x.k === 'string' && typeof x.l === 'string' && typeof x.id === 'string')) return null;
+  // Drop columns that no longer exist (Company, Signature) and the old signature input type.
+  const cols = c.cols
+    .filter((x) => !REMOVED_COLS.includes(x.k as string))
+    .map((x) => ((x.inputType as string | undefined) === 'signature' ? { ...x, inputType: 'text' as const } : x));
   return {
     ...newCfg(null),
     ...c,
+    cols,
     paper: c.paper && c.paper in SIZES ? c.paper : 'a4',
     land: c.land ? 1 : 0,
   } as Cfg;
@@ -256,7 +283,8 @@ export function SheetPage() {
   const pageW = land ? size.ch : size.cw;
   const pageH = land ? size.cw : size.ch;
 
-  /* scale the sheet to whatever width the preview box has (phone to desktop) */
+  /* scale the sheet to the preview column; on the two-column editor also to the window height,
+     so the whole paper stays visible while the controls on the right scroll */
   const pvRef = useRef<HTMLDivElement>(null);
   const shRef = useRef<HTMLDivElement>(null);
   const [k, setK] = useState(0.5);
@@ -265,9 +293,14 @@ export function SheetPage() {
     const fit = () => {
       const w = pvRef.current?.clientWidth ?? W;
       if (!w) return;
-      const s = w / W;
+      const sheetH = shRef.current?.offsetHeight ?? H;
+      let s = w / W;
+      if (editing && window.innerWidth >= SPLIT_W) {
+        const byHeight = (window.innerHeight - PREVIEW_RESERVE) / sheetH;
+        s = Math.min(s, Math.max(0.3, byHeight));
+      }
       setK(s);
-      setPh((shRef.current?.offsetHeight ?? H) * s);
+      setPh(sheetH * s);
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -278,7 +311,7 @@ export function SheetPage() {
       ro.disconnect();
       window.removeEventListener('resize', fit);
     };
-  }, [cfg, W, H]);
+  }, [cfg, W, H, editing]);
 
   const save = async () => {
     if (!cfg) return;
@@ -370,6 +403,12 @@ export function SheetPage() {
     setNewCol('');
   };
 
+  /* ---------- paper helpers: changing paper or orientation resets rows to what fits ---------- */
+  const setPaper = (paper: PaperKey) => up({ paper, rows: rowsFor(paper, !!cfg.land) });
+  const setLand = (l: 0 | 1) => up({ land: l, rows: rowsFor(cfg.paper, !!l) });
+  const suggestedRows = rowsFor(cfg.paper, !!cfg.land);
+  const rowOptions = Array.from(new Set([...ROW_OPTIONS, suggestedRows, cfg.rows])).sort((a, b) => a - b);
+
   /* ---------- sheet data ---------- */
   const s = session.data ?? null;
   const locked = !!(s && s.sheetLocked);
@@ -380,15 +419,10 @@ export function SheetPage() {
   const shown = cfg.cols.filter((c) => c.on);
   const rowsPerPage = cfg.rows;
   const totalPages = Math.max(1, Math.ceil(records.length / rowsPerPage));
-  // Row height so one page of rows fits the paper: page padding + header + details block + table head
-  // + footer, and 1px of border per row. (The old numbers left 1px per row and the footer line unaccounted for.)
+  // The table stretches to fill whatever space is left on the page, so rows share it evenly and the
+  // last row always sits on the bottom margin.
   const padY = H < 900 ? 30 : 60;
-  const fixedH = padY * 2 + 83 + (cfg.det && cfg.f.some((x) => x[1]) ? 142 : 0) + 20 + 37 + 76;
-  const rh = Math.max(18, Math.min(40, Math.floor((H - fixedH - 24) / rowsPerPage) - 1));
   const link = s?.shareLink || 'https://geoattend.app';
-  const meta = `Location verified, ${s?.radius ?? 100} m radius · ${(s?.location.lat ?? 14.5995).toFixed(4)}, ${(
-    s?.location.lng ?? 120.9842
-  ).toFixed(4)}`;
   const lb = {
     fontSize: 10,
     letterSpacing: '.14em',
@@ -409,7 +443,7 @@ export function SheetPage() {
       case 'time':
         return rec ? timeOf(new Date(rec.at)) : '';
       default:
-        return ''; // company, signature and custom columns are left blank to write in
+        return ''; // custom columns are left blank to write in
     }
   };
 
@@ -425,8 +459,11 @@ export function SheetPage() {
         className="sheet"
         style={{
           position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
           width: mode === 'print' ? pageW : W,
-          minHeight: mode === 'print' ? undefined : H,
+          // Exactly one page tall (1px less when printing so the browser never adds a blank page).
+          height: mode === 'print' ? `calc(${pageH} - 1px)` : H,
           boxSizing: 'border-box',
           padding: `${padY}px 54px`,
           background: '#fff',
@@ -442,6 +479,7 @@ export function SheetPage() {
             alignItems: 'flex-end',
             paddingBottom: 16,
             borderBottom: `3px solid ${ac}`,
+            flexShrink: 0,
           }}
         >
           <div>
@@ -478,6 +516,7 @@ export function SheetPage() {
               padding: '16px 20px',
               borderRadius: 4,
               borderLeft: `4px solid ${ac}`,
+              flexShrink: 0,
             }}
           >
             {cfg.f
@@ -491,82 +530,67 @@ export function SheetPage() {
           </div>
         )}
 
-        <table
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            marginTop: 20,
-            border: `1.5px solid ${ac}`,
-          }}
-        >
-          <thead>
-            <tr>
-              {shown.map((c) => (
-                <th
-                  key={c.id}
-                  style={{
-                    textAlign: 'left',
-                    padding: '10px 8px',
-                    fontSize: 10.5,
-                    letterSpacing: '.12em',
-                    textTransform: 'uppercase',
-                    color: ac,
-                    background: ti,
-                    border: `1px solid ${GRID}`,
-                    borderBottom: `2px solid ${ac}`,
-                    width: COL_W[c.k],
-                  }}
-                >
-                  {c.l}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: rowsToShow }, (_, i) => {
-              const r = startIdx + i;
-              const rec = records[r];
-              return (
-                <tr key={i} style={{ background: i % 2 ? '#F8F9FB' : '#fff' }}>
-                  {shown.map((c) => {
-                    const isSignature = c.k === 'sign';
-                    const signatureData = rec?.signature;
-
-                    return (
+        {/* The table area takes all the space left on the page; the rows share it evenly. */}
+        <div style={{ flex: 1, minHeight: 0, marginTop: 20 }}>
+          <table
+            style={{
+              width: '100%',
+              height: '100%',
+              borderCollapse: 'collapse',
+              border: `1.5px solid ${ac}`,
+            }}
+          >
+            <thead>
+              <tr>
+                {shown.map((c) => (
+                  <th
+                    key={c.id}
+                    style={{
+                      textAlign: 'left',
+                      padding: '10px 8px',
+                      fontSize: 10.5,
+                      letterSpacing: '.12em',
+                      textTransform: 'uppercase',
+                      color: ac,
+                      background: ti,
+                      border: `1px solid ${GRID}`,
+                      borderBottom: `2px solid ${ac}`,
+                      width: COL_W[c.k],
+                      height: 37,
+                    }}
+                  >
+                    {c.l}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: rowsToShow }, (_, i) => {
+                const r = startIdx + i;
+                return (
+                  <tr key={i} style={{ background: i % 2 ? '#F8F9FB' : '#fff' }}>
+                    {shown.map((c) => (
                       <td
                         key={c.id}
                         style={{
                           border: `1px solid ${GRID}`,
-                          height: rh,
-                          padding: isSignature && signatureData ? '4px' : '0 8px',
+                          height: ROW_MIN,
+                          padding: '0 8px',
                           fontSize: 14,
                           color: c.k === 'no' ? '#9CA3AF' : '#111',
                           fontVariantNumeric: 'tabular-nums',
                           verticalAlign: 'middle',
                         }}
                       >
-                        {isSignature && signatureData ? (
-                          <img
-                            src={signatureData}
-                            alt="Signature"
-                            style={{
-                              maxWidth: '100%',
-                              maxHeight: rh - 8,
-                              objectFit: 'contain',
-                              display: 'block',
-                            }}
-                          />
-                        ) : (
-                          cellValue(c, r)
-                        )}
+                        {cellValue(c, r)}
                       </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   };
@@ -658,14 +682,17 @@ export function SheetPage() {
       <ErrorBox error={session.error} />
 
       <div className={`mt-[18px] grid grid-cols-1 gap-x-[21px] gap-y-[18px] ${readOnly || isViewOnly ? 'mx-auto max-w-[820px]' : 'min-[900px]:grid-cols-[minmax(0,1.14fr)_minmax(0,1fr)]'}`}>
-        {/* Preview */}
-        <div className="min-w-0 min-[900px]:self-start min-[900px]:[@media(min-height:760px)]:sticky min-[900px]:[@media(min-height:760px)]:top-5">
-          <div
-            ref={pvRef}
-            className="sheet-pv relative w-full overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-md"
-            style={{ height: ph }}
-          >
-            {sheet}
+        {/* Preview: pinned on wide screens, so the paper stays in view while the controls scroll */}
+        <div
+          className={`min-w-0 ${editing ? 'min-[900px]:sticky min-[900px]:top-5 min-[900px]:self-start' : ''}`}
+        >
+          <div ref={pvRef} className="w-full">
+            <div
+              className="sheet-pv relative mx-auto overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-md"
+              style={{ width: W * k, height: ph }}
+            >
+              {sheet}
+            </div>
           </div>
 
           {/* Page navigation - only show if multiple pages */}
@@ -748,7 +775,7 @@ export function SheetPage() {
                 <div className="grid gap-5 min-[560px]:grid-cols-[1.5fr_1fr] min-[900px]:grid-cols-1 min-[1100px]:grid-cols-[1.5fr_1fr]">
                   <div className="min-w-0 space-y-2">
                     <Label>Paper size</Label>
-                    <Select value={cfg.paper} onValueChange={(v) => up({ paper: v as PaperKey })}>
+                    <Select value={cfg.paper} onValueChange={(v) => setPaper(v as PaperKey)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select paper" />
                       </SelectTrigger>
@@ -768,13 +795,17 @@ export function SheetPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {ROW_OPTIONS.map((n) => (
+                        {rowOptions.map((n) => (
                           <SelectItem key={n} value={String(n)}>
                             {n}
+                            {n === suggestedRows ? ' (suggested)' : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-[13px]" style={mut}>
+                      Suggested for this paper: {suggestedRows}.
+                    </p>
                   </div>
                 </div>
 
@@ -787,7 +818,7 @@ export function SheetPage() {
                       role="radio"
                       aria-checked={!cfg.land}
                       variant={!cfg.land ? 'default' : 'outline'}
-                      onClick={() => up({ land: 0 })}
+                      onClick={() => setLand(0)}
                     >
                       <i className="ti ti-rectangle-vertical mr-1.5 text-[16px]" aria-hidden="true" />
                       Portrait
@@ -798,7 +829,7 @@ export function SheetPage() {
                       role="radio"
                       aria-checked={!!cfg.land}
                       variant={cfg.land ? 'default' : 'outline'}
-                      onClick={() => up({ land: 1 })}
+                      onClick={() => setLand(1)}
                     >
                       <i className="ti ti-rectangle mr-1.5 text-[16px]" aria-hidden="true" />
                       Landscape
@@ -907,7 +938,6 @@ export function SheetPage() {
                           <SelectContent>
                             <SelectItem value="text">Text</SelectItem>
                             <SelectItem value="number">Number</SelectItem>
-                            <SelectItem value="signature">Signature/Handwritten</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
