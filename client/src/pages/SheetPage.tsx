@@ -160,7 +160,14 @@ export function SheetPage() {
   const readOnly = printMode || viewMode || pdfMode;
 
   // No API calls for the "preview" id.
-  const session = useAsync(() => (isPreview ? Promise.resolve(null) : sessionsApi.getMine(id)), [id]);
+  // Use public session endpoint for view-only mode (participant via /s/:linkToken), 
+  // use creator endpoint for manage mode (creator via /manage/:id)
+  const session = useAsync(() => {
+    if (isPreview) return Promise.resolve(null);
+    if (isViewOnly) return sessionsApi.getDetail(id); // Public endpoint, uses linkToken
+    return sessionsApi.getMine(id); // Creator endpoint, uses database _id
+  }, [id, isViewOnly]);
+
   const recs = useAsync(() => (isPreview ? Promise.resolve(null) : sessionsApi.records(id)), [id]);
 
   const [cfg, setCfg] = useState<Cfg | null>(null);
@@ -843,37 +850,37 @@ export function SheetPage() {
                         onChange={(e) => setCol(i, { l: e.target.value })}
                       />
                       <div className="ml-auto flex shrink-0 items-center gap-2">
-                      <button
-                        type="button"
-                        className={miniBtn}
-                        aria-label={`Move ${c.l} up`}
-                        disabled={i === 0 || locked}
-                        onClick={() => moveCol(i, -1)}
-                      >
-                        <i className="ti ti-arrow-up" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        className={miniBtn}
-                        aria-label={`Move ${c.l} down`}
-                        disabled={i === cfg.cols.length - 1 || locked}
-                        onClick={() => moveCol(i, 1)}
-                      >
-                        <i className="ti ti-arrow-down" aria-hidden="true" />
-                      </button>
-                      {c.k === 'custom' ? (
                         <button
                           type="button"
-                          className={`${miniBtn} !text-[var(--err)]`}
-                          aria-label={`Remove ${c.l}`}
-                          disabled={locked}
-                          onClick={() => up({ cols: cfg.cols.filter((_, j) => j !== i) })}
+                          className={miniBtn}
+                          aria-label={`Move ${c.l} up`}
+                          disabled={i === 0 || locked}
+                          onClick={() => moveCol(i, -1)}
                         >
-                          <i className="ti ti-x" aria-hidden="true" />
+                          <i className="ti ti-arrow-up" aria-hidden="true" />
                         </button>
-                      ) : (
-                        <span className="h-9 w-9 shrink-0" aria-hidden="true" />
-                      )}
+                        <button
+                          type="button"
+                          className={miniBtn}
+                          aria-label={`Move ${c.l} down`}
+                          disabled={i === cfg.cols.length - 1 || locked}
+                          onClick={() => moveCol(i, 1)}
+                        >
+                          <i className="ti ti-arrow-down" aria-hidden="true" />
+                        </button>
+                        {c.k === 'custom' ? (
+                          <button
+                            type="button"
+                            className={`${miniBtn} !text-[var(--err)]`}
+                            aria-label={`Remove ${c.l}`}
+                            disabled={locked}
+                            onClick={() => up({ cols: cfg.cols.filter((_, j) => j !== i) })}
+                          >
+                            <i className="ti ti-x" aria-hidden="true" />
+                          </button>
+                        ) : (
+                          <span className="h-9 w-9 shrink-0" aria-hidden="true" />
+                        )}
                       </div>
                     </div>
                     {c.k === 'custom' && (
