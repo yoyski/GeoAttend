@@ -65,10 +65,15 @@ export const login = async (req: Request, res: Response) => {
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
+  // The native app cannot rely on cross-site cookies, so it asks for the token (?native=1)
+  // and sends it back as a Bearer header. The web app never receives the token in JS.
+  const isNative = req.query.native === '1';
+
   res.json({
     ok: true,
     data: {
       user: userDto(user),
+      ...(isNative ? { token } : {}),
     },
   });
 };
@@ -166,20 +171,43 @@ export const reset = async (req: Request, res: Response) => {
 
 export const googleCallback = async (req: Request, res: Response) => {
   passport.authenticate('google', { session: false }, (err: Error, user: any) => {
+    // The flag set in the /google route comes back here as ?state=mobile
+    const isMobileApp = req.query.state === 'mobile' || req.query.mobile === 'true';
+
     if (err || !user) {
+      if (isMobileApp) {
+        return res.redirect(`geoattend://auth/callback?error=oauth_failed`);
+      }
       return res.redirect(`${env.CLIENT_URL}/auth?error=oauth_failed`);
     }
 
     const token = signJwt(user);
 
-    // Check if request is from mobile app (Capacitor sends a specific User-Agent)
-    const userAgent = req.headers['user-agent'] || '';
-    const isMobileApp = userAgent.includes('Capacitor') || req.query.mobile === 'true';
-
     if (isMobileApp) {
-      // Redirect to custom scheme deep link for mobile app
-      // This will automatically close the browser and return to the app
-      return res.redirect(`geoattend://auth/callback?token=${token}`);
+      // Hand the token to the app through its custom-scheme deep link.
+      // A page with a meta refresh plus a button is more reliable in a Chrome Custom Tab than a bare 302,
+      // because the button is a real user gesture if the automatic redirect is blocked.
+      const deepLink = `geoattend://auth/callback?token=${encodeURIComponent(token)}`;
+      res
+        .status(200)
+        .set('Cache-Control', 'no-store')
+        .type('html')
+        .send(`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="0;url=${deepLink}">
+<title>Signing you in</title>
+</head>
+<body style="font-family:system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;text-align:center;padding:24px">
+<div>
+<p>Returning to GeoAttend...</p>
+<p><a href="${deepLink}" style="display:inline-block;padding:12px 24px;border-radius:12px;background:#111;color:#fff;text-decoration:none;font-weight:600">Open GeoAttend</a></p>
+</div>
+</body>
+</html>`);
+      return;
     }
 
     // For web (Vercel), pass token via URL so client can set it as a cookie

@@ -11,12 +11,24 @@ declare module 'express-serve-static-core' {
 }
 
 /**
- * Real JWT authentication. Verifies the token from the httpOnly cookie
+ * Reads the JWT from "Authorization: Bearer <token>" (native app) or the httpOnly cookie (web).
+ */
+function getToken(req: Request): string | undefined {
+  const header = req.headers.authorization;
+  if (header && header.startsWith('Bearer ')) {
+    const bearer = header.slice(7).trim();
+    if (bearer) return bearer;
+  }
+  return req.cookies?.token as string | undefined;
+}
+
+/**
+ * Real JWT authentication. Verifies the token from the Bearer header or the httpOnly cookie
  * and loads the user into req.user. Public endpoints can skip this middleware.
  */
 export async function auth(req: Request, _res: Response, next: NextFunction) {
   try {
-    const token = req.cookies.token;
+    const token = getToken(req);
     if (!token) {
       throw new HttpError(401, 'UNAUTHENTICATED', 'Log in first.');
     }
@@ -41,7 +53,7 @@ export async function auth(req: Request, _res: Response, next: NextFunction) {
  */
 export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
   try {
-    const token = req.cookies.token;
+    const token = getToken(req);
     if (token) {
       const payload = verifyJwt(token);
       const user = await User.findById(payload.userId);

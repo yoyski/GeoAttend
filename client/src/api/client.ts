@@ -1,12 +1,66 @@
 import axios, { AxiosError } from 'axios';
+import { Capacitor } from '@capacitor/core';
 
 // Use environment variable for API URL, fallback to relative /api for development
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
-// Real JWT auth: credentials are sent automatically in httpOnly cookies
+/**
+ * Web: credentials travel in the httpOnly cookie.
+ * Native app (Capacitor): the page origin (https://localhost) is cross-site to the API,
+ * so cookies are unreliable. The JWT is kept in storage and sent as a Bearer header instead.
+ */
+const TOKEN_KEY = 'geoattend:token';
+const isNative = () => Capacitor.isNativePlatform();
+
+export const getNativeToken = (): string | null => {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
+export const setNativeToken = (token: string) => {
+  try {
+    localStorage.setItem(TOKEN_KEY, token);
+  } catch {
+    /* ignore */
+  }
+};
+
+export const clearNativeToken = () => {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+};
+
 const http = axios.create({
   baseURL: API_URL,
-  withCredentials: true, // Send cookies automatically
+  withCredentials: true, // Send cookies automatically (web)
+});
+
+http.interceptors.request.use((config) => {
+  if (isNative()) {
+    const token = getNativeToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Ask the server to include the token in the login response
+    if (config.url?.endsWith('/auth/login')) {
+      config.params = { ...(config.params ?? {}), native: '1' };
+    }
+  }
+  return config;
+});
+
+http.interceptors.response.use((res) => {
+  if (isNative() && res.config.url?.endsWith('/auth/login')) {
+    const token = res.data?.data?.token as string | undefined;
+    if (token) setNativeToken(token);
+  }
+  return res;
 });
 
 export class ApiError extends Error {
@@ -33,4 +87,3 @@ export async function api<T>(method: Method, url: string, opts: { data?: unknown
     );
   }
 }
-

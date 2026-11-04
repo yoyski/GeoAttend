@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { meApi, authApi } from '../api/endpoints';
+import { clearNativeToken } from '../api/client';
 import type { Me } from '../types';
 
 interface AuthContextType {
@@ -32,9 +33,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const logout = async () => {
         try {
             await authApi.logout();
-            setUser(null);
         } catch (err) {
             console.error('Logout failed:', err);
+        } finally {
+            // Native app keeps its token in storage, so clear it too
+            clearNativeToken();
             setUser(null);
         }
     };

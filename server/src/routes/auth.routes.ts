@@ -15,9 +15,13 @@ r.get('/verify/:token', h(c.verify));
 r.post('/forgot', validate({ body: forgotBody }), h(c.forgot));
 r.post('/reset', validate({ body: resetBody }), h(c.reset));
 
-// Google OAuth routes
-r.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+// Google OAuth routes.
+// The app opens /google?mobile=true. Google does not send that query back, so we hand it
+// over in the OAuth "state" parameter, which Google returns untouched to the callback.
+r.get('/google', (req, res, next) => {
+  const state = req.query.mobile === 'true' ? 'mobile' : 'web';
+  passport.authenticate('google', { scope: ['profile', 'email'], session: false, state })(req, res, next);
+});
 r.get('/google/callback', h(c.googleCallback));
 
 export default r;
-

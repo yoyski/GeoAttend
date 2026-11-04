@@ -1,10 +1,12 @@
 import { lazy, Suspense, useState, useEffect } from 'react';
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { LoginGate } from './components/LoginGate';
 import { SplashScreen } from './components/SplashScreen';
 import { useAuth } from './hooks/useAuth';
+import { setNativeToken } from './api/client';
 import { App as CapacitorApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
 // Lazy load all page components
@@ -71,34 +73,34 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle deep links (for OAuth callback on mobile)
+  // Handle deep links (Google OAuth callback on mobile): geoattend://auth/callback?token=xxx
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    const handleDeepLink = CapacitorApp.addListener('appUrlOpen', (data) => {
-      console.log('Deep link received:', data.url);
+    const handlePromise = CapacitorApp.addListener('appUrlOpen', (data) => {
+      try {
+        const url = new URL(data.url);
+        if (url.hostname !== 'auth' || url.pathname !== '/callback') return;
 
-      // Parse the deep link URL: geoattend://auth/callback?token=xxx
-      const url = new URL(data.url);
-
-      if (url.hostname === 'auth' && url.pathname === '/callback') {
         const token = url.searchParams.get('token');
+        if (!token) return;
 
-        if (token) {
-          // Set the token as a cookie
-          const cookieString = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; samesite=lax; secure`;
-          document.cookie = cookieString;
+        // The app is on https://localhost while the API is on another domain, so a cookie would never
+        // reach the API. Keep the token in storage; the API client sends it as a Bearer header.
+        setNativeToken(token);
 
-          console.log('Token from deep link set as cookie');
+        // Close the in-app browser if it is still open (no-op on Android, harmless)
+        Browser.close().catch(() => {});
 
-          // Navigate to attend page
-          window.location.href = '/attend';
-        }
+        // Full reload so the auth check runs again with the new token
+        window.location.replace('/attend');
+      } catch (err) {
+        console.error('Invalid deep link:', err);
       }
     });
 
     return () => {
-      handleDeepLink.remove();
+      handlePromise.then((handle) => handle.remove());
     };
   }, []);
 
