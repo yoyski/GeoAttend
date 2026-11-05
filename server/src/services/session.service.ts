@@ -19,6 +19,11 @@ export interface SessionInput {
   verification: 'location' | 'passcode' | 'email';
   passcode?: string;
   allowedEmails?: string[];
+  schedule?: {
+    enabled: boolean;
+    daysOfWeek: number[];
+    autoClose: boolean;
+  };
 }
 
 const countFor = (sessionId: unknown) => CheckIn.countDocuments({ session: sessionId });
@@ -49,6 +54,7 @@ export async function createSession(user: UserDoc, input: SessionInput) {
     passcodeHash: passcodeHash || undefined,
     linkToken: randomToken(),
     allowedEmails: input.verification === 'email' ? [...new Set(input.allowedEmails ?? [])] : [],
+    schedule: input.schedule ?? { enabled: false, daysOfWeek: [], autoClose: true },
   });
   // The passcode is returned ONCE here. Only its hash is stored.
   return { session: creatorDto(s, 0), passcode };
@@ -105,6 +111,16 @@ export async function updateSession(user: UserDoc, id: string, patch: Partial<Se
   if (s.verification === 'email' && s.allowedEmails.length === 0) {
     throw new HttpError(400, 'VALIDATION', 'Add at least one authorized email.');
   }
+  
+  // Update schedule if provided
+  if (patch.schedule !== undefined) {
+    s.schedule = {
+      enabled: patch.schedule.enabled ?? false,
+      daysOfWeek: patch.schedule.daysOfWeek ?? [],
+      autoClose: patch.schedule.autoClose ?? true,
+    };
+  }
+  
   await s.save();
   return { session: creatorDto(s, count), passcode };
 }
@@ -144,6 +160,7 @@ export async function duplicateSession(user: UserDoc, id: string) {
     linkToken: randomToken(),
     allowedEmails: [...s.allowedEmails],
     sheet: s.sheet ?? null,
+    schedule: s.schedule ?? { enabled: false, daysOfWeek: [], autoClose: true },
   });
   return { session: creatorDto(copy, 0), passcode };
 }
@@ -178,7 +195,7 @@ export async function getAttendanceSheetData(linkToken: string) {
   // Get all check-ins for this session
   const checkIns = await CheckIn.find({ session: session._id })
     .populate('user', 'name email avatar')
-    .sort({ checkedInAt: 1 })
+    .sort({ at: 1 })
     .lean();
 
   // Return session info and records
@@ -186,13 +203,13 @@ export async function getAttendanceSheetData(linkToken: string) {
     session: creatorDto(session, checkIns.length),
     records: checkIns.map((ci: any) => ({
       id: ci._id.toString(),
-      name: ci.user?.name || ci.customFields?.name || 'Anonymous',
-      email: ci.user?.email || ci.customFields?.email || '',
-      time: ci.checkedInAt,
-      late: ci.late,
+      name: ci.name || 'Anonymous',
+      email: ci.email || '',
+      at: ci.at,
+      late: ci.late || false,
       manual: ci.manual || false,
-      distance: ci.distance,
-      accuracy: ci.accuracy,
+      distance: ci.distance ?? null,
+      accuracy: ci.accuracy ?? null,
       customFields: ci.customFields || {},
       signature: ci.signature || null,
     })),

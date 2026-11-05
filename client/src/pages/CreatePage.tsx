@@ -5,7 +5,7 @@ import { ApiError } from '../api/client';
 import { LeafletMap } from '../components/LeafletMap';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 // Kept from the custom kit
@@ -39,6 +39,68 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_R = 1; // minimum radius
 const MAX_R = 400;
 
+/* ---------- schedule helpers ---------- */
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const PRESETS: { label: string; days: number[] }[] = [
+  { label: 'Weekdays', days: [1, 2, 3, 4, 5] },
+  { label: 'Every day', days: [0, 1, 2, 3, 4, 5, 6] },
+  { label: 'Weekends', days: [0, 6] },
+];
+const sameDays = (a: number[], b: number[]) => a.length === b.length && a.every((d, i) => d === b[i]);
+
+/** "14:30" -> "2:30 PM" */
+function fmt12(hhmm: string) {
+  const [h, m] = hhmm.split(':').map(Number);
+  if (h === undefined || m === undefined || Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+}
+
+/** Plain-words description of the selected days. */
+function describeDays(days: number[]) {
+  if (days.length === 7) return 'every day';
+  if (sameDays(days, [1, 2, 3, 4, 5])) return 'every weekday';
+  if (sameDays(days, [0, 6])) return 'every weekend';
+  const names = days.map((d) => DAYS_LONG[d]!);
+  if (names.length === 1) return `every ${names[0]}`;
+  return `every ${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+/** On/off switch. */
+function Switch({
+  id,
+  checked,
+  onChange,
+  label,
+}: {
+  id?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
+  return (
+    <button
+      id={id}
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]"
+      style={{ background: checked ? 'var(--pine)' : 'var(--line)' }}
+    >
+      <span
+        aria-hidden="true"
+        className="inline-block h-5 w-5 rounded-full shadow transition-transform"
+        style={{
+          background: checked ? 'var(--card)' : 'var(--mut)',
+          transform: checked ? 'translateX(22px)' : 'translateX(2px)',
+        }}
+      />
+    </button>
+  );
+}
+
 export function CreatePage() {
   const { fix } = useLocationCtx();
   const nav = useNavigate();
@@ -62,6 +124,9 @@ export function CreatePage() {
       verification: 'location' as Verification,
       passcode: genPasscode(),
       emails: [] as string[],
+      scheduleEnabled: false,
+      scheduleDays: [] as number[],
+      scheduleAutoClose: true,
     };
     const draft = loadDraft<Partial<typeof base>>('create');
     return draft ? { ...base, ...draft } : base;
@@ -110,6 +175,13 @@ export function CreatePage() {
     if (!bad) setEmailDraft('');
   };
 
+  const toggleScheduleDay = (day: number) => {
+    const days = f.scheduleDays.includes(day)
+      ? f.scheduleDays.filter((d) => d !== day)
+      : [...f.scheduleDays, day].sort((a, b) => a - b);
+    set('scheduleDays', days);
+  };
+
   const fail = (message: string) => setError({ message } as ApiError);
 
   const submit = async (e: FormEvent) => {
@@ -123,6 +195,7 @@ export function CreatePage() {
     if (end <= start) return fail('The end time must be after the start time.');
     if (f.verification === 'passcode' && f.passcode.length < 6) return fail('Passcode needs at least 6 characters.');
     if (f.verification === 'email' && f.emails.length === 0) return fail('Add at least one authorized email.');
+    if (f.scheduleEnabled && f.scheduleDays.length === 0) return fail('Select at least one day for the schedule.');
 
     // Publishing needs an account. Keep what was typed, send them to log in, and bring them back here.
     if (authLoading) return;
@@ -146,6 +219,13 @@ export function CreatePage() {
         verification: f.verification,
         ...(f.verification === 'passcode' ? { passcode: f.passcode } : {}),
         ...(f.verification === 'email' ? { allowedEmails: f.emails } : {}),
+        ...(f.scheduleEnabled ? {
+          schedule: {
+            enabled: true,
+            daysOfWeek: f.scheduleDays,
+            autoClose: f.scheduleAutoClose,
+          }
+        } : {}),
       });
       clearDraft('create');
       // The sheet designed before publishing belongs to the new session now.
@@ -236,8 +316,8 @@ export function CreatePage() {
           </CardContent>
         </Card>
 
-        {/* ---------- Location (sticky on wide screens) ---------- */}
-        <Card className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:[@media(min-height:760px)]:sticky lg:[@media(min-height:760px)]:top-5">
+        {/* ---------- Location (pinned on wide screens: stays in view while the left side scrolls) ---------- */}
+        <Card className="min-w-0 lg:sticky lg:top-5 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
           <CardHeader>
             <CardTitle>Location</CardTitle>
             <CardDescription>
@@ -246,7 +326,8 @@ export function CreatePage() {
           </CardHeader>
           <CardContent>
             <div className="overflow-hidden rounded-2xl border border-[var(--line)] shadow-[var(--shadow-sm)]">
-              <div className="aspect-[4/3] max-h-[min(60dvh,480px)] w-full sm:aspect-[16/10] lg:aspect-[4/3]">
+              {/* On wide screens the map height follows the window, so the whole card fits without scrolling. */}
+              <div className="aspect-[4/3] max-h-[min(60dvh,480px)] w-full sm:aspect-[16/10] lg:aspect-auto lg:h-[clamp(200px,calc(100dvh_-_360px),480px)] lg:max-h-none">
                 <LeafletMap
                   venue={{ lat: f.lat, lng: f.lng, radius: f.radius }}
                   user={fix}
@@ -295,6 +376,118 @@ export function CreatePage() {
 
         {/* ---------- Verification, sheet, publish ---------- */}
         <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-2">
+          {/* Schedule (recurring) */}
+          <Card>
+            <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
+              <div className="min-w-0 space-y-1.5">
+                <CardTitle>
+                  <label htmlFor="schedule-enabled" className="cursor-pointer">
+                    Repeat weekly
+                  </label>
+                </CardTitle>
+                <CardDescription>Open this session automatically on the days you choose.</CardDescription>
+              </div>
+              <Switch
+                id="schedule-enabled"
+                label="Repeat weekly"
+                checked={f.scheduleEnabled}
+                onChange={(v) => set('scheduleEnabled', v)}
+              />
+            </CardHeader>
+
+            {f.scheduleEnabled && (
+              <CardContent className="space-y-5 border-t border-[var(--line)] pt-5">
+                {/* Day picker */}
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Label>Repeat on</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PRESETS.map((pr) => {
+                        const active = sameDays(f.scheduleDays, pr.days);
+                        return (
+                          <button
+                            key={pr.label}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={() => set('scheduleDays', pr.days)}
+                            className="rounded-full px-2.5 py-1 text-[12px] font-semibold transition-colors hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]"
+                            style={{
+                              color: active ? 'var(--pine)' : 'var(--mut)',
+                              background: active ? 'var(--tint)' : 'transparent',
+                            }}
+                          >
+                            {pr.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5" role="group" aria-label="Days of the week">
+                    {DAYS.map((day, idx) => {
+                      const selected = f.scheduleDays.includes(idx);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          aria-pressed={selected}
+                          aria-label={DAYS_LONG[idx]}
+                          onClick={() => toggleScheduleDay(idx)}
+                          className="grid h-10 min-w-0 place-items-center rounded-full border text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)] min-[420px]:text-[13px]"
+                          style={{
+                            borderColor: selected ? 'var(--pine)' : 'var(--line)',
+                            borderWidth: selected ? 2 : 1,
+                            background: selected ? 'var(--tint)' : 'transparent',
+                            color: 'var(--ink)',
+                            fontWeight: selected ? 700 : 600,
+                          }}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {f.scheduleDays.length === 0 ? (
+                    <p className="text-[13px] font-semibold" style={{ color: 'var(--err)' }} role="alert">
+                      Pick at least one day.
+                    </p>
+                  ) : (
+                    <p className="flex items-start gap-2 text-[13px]" style={mut}>
+                      <i className="ti ti-calendar-repeat mt-0.5 shrink-0 text-[16px] text-[var(--pine)]" aria-hidden="true" />
+                      <span>
+                        Opens <strong className="font-semibold text-[var(--ink)]">{describeDays(f.scheduleDays)}</strong> at{' '}
+                        <strong className="font-semibold text-[var(--ink)]">{fmt12(f.ts)}</strong>
+                        {f.scheduleAutoClose && (
+                          <>
+                            {' '}and closes at <strong className="font-semibold text-[var(--ink)]">{fmt12(f.te)}</strong>
+                          </>
+                        )}
+                        .
+                      </span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Auto-close */}
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--line)] px-3.5 py-3">
+                  <label htmlFor="schedule-auto-close" className="min-w-0 cursor-pointer">
+                    <span className="block text-sm font-semibold">Close automatically</span>
+                    <span className="block text-[13px]" style={mut}>
+                      Ends check-in at the end time. Turn off to close it yourself.
+                    </span>
+                  </label>
+                  <Switch
+                    id="schedule-auto-close"
+                    label="Close automatically at end time"
+                    checked={f.scheduleAutoClose}
+                    onChange={(v) => set('scheduleAutoClose', v)}
+                  />
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Verification</CardTitle>

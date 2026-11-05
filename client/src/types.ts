@@ -20,6 +20,11 @@ export interface CreatorSession {
   startsAt: string; endsAt: string; status: Status; location: LatLng; radius: number;
   verification: Verification; allowedEmails: string[]; shareLink: string;
   sheet: any | null; checkInCount: number; locked: boolean; sheetLocked: boolean; lateAfterTime?: string;
+  schedule?: {
+    enabled: boolean;
+    daysOfWeek: number[];
+    autoClose: boolean;
+  };
 }
 
 export interface RecordRow {
@@ -45,4 +50,9 @@ export interface SessionInput {
   title: string; description: string; venue: string;
   startsAt: string; endsAt: string; lat: number; lng: number; radius: number;
   verification: Verification; passcode?: string; allowedEmails?: string[]; lateAfterTime?: string;
+  schedule?: {
+    enabled: boolean;
+    daysOfWeek: number[];
+    autoClose: boolean;
+  };
 }

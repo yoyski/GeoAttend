@@ -47,6 +47,68 @@ const when = (startIso: string, endIso: string) => {
 };
 const slug = (t: string) => t.replace(/[^\w-]+/g, '_');
 
+/* ---------- schedule helpers (same look as the Create page) ---------- */
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const PRESETS: { label: string; days: number[] }[] = [
+  { label: 'Weekdays', days: [1, 2, 3, 4, 5] },
+  { label: 'Every day', days: [0, 1, 2, 3, 4, 5, 6] },
+  { label: 'Weekends', days: [0, 6] },
+];
+const sameDays = (a: number[], b: number[]) => a.length === b.length && a.every((d, i) => d === b[i]);
+
+/** "14:30" -> "2:30 PM" */
+function fmt12(hhmm: string) {
+  const [h, m] = hhmm.split(':').map(Number);
+  if (h === undefined || m === undefined || Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+}
+
+/** Plain-words description of the selected days. */
+function describeDays(days: number[]) {
+  if (days.length === 7) return 'every day';
+  if (sameDays(days, [1, 2, 3, 4, 5])) return 'every weekday';
+  if (sameDays(days, [0, 6])) return 'every weekend';
+  const names = days.map((d) => DAYS_LONG[d]!);
+  if (names.length === 1) return `every ${names[0]}`;
+  return `every ${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+/** On/off switch. */
+function Switch({
+  id,
+  checked,
+  onChange,
+  label,
+}: {
+  id?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
+  return (
+    <button
+      id={id}
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]"
+      style={{ background: checked ? 'var(--pine)' : 'var(--line)' }}
+    >
+      <span
+        aria-hidden="true"
+        className="inline-block h-5 w-5 rounded-full shadow transition-transform"
+        style={{
+          background: checked ? 'var(--card)' : 'var(--mut)',
+          transform: checked ? 'translateX(22px)' : 'translateX(2px)',
+        }}
+      />
+    </button>
+  );
+}
+
 /**
  * One file row: icon, name, meta, actions.
  * Phone: the actions drop onto their own full-width row. Tablet and up: everything sits on one line.
@@ -65,17 +127,17 @@ function FileRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-3.5 gap-y-3 rounded-xl border border-[var(--line)] bg-[var(--card)] p-3 transition-shadow hover:shadow-[var(--shadow-md)]">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-4 rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 transition-shadow hover:shadow-[var(--shadow-md)]">
       <span
         aria-hidden="true"
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[22px]"
+        className="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-[24px]"
         style={{ color: tint, background: `color-mix(in srgb, ${tint} 14%, transparent)` }}
       >
         <i className={`ti ${icon}`} />
       </span>
       <div className="min-w-0 flex-1 basis-[140px]">
-        <p className="truncate text-sm font-semibold">{name}</p>
-        <p className="truncate text-[12px]" style={mut}>
+        <p className="truncate text-[15px] font-semibold">{name}</p>
+        <p className="mt-0.5 truncate text-[13px]" style={mut}>
           {meta}
         </p>
       </div>
@@ -86,17 +148,17 @@ function FileRow({
 
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]';
-const backCls = `inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--mut)] hover:text-[var(--ink)] ${focusRing}`;
+const backCls = `inline-flex items-center gap-1.5 py-1 text-[14px] font-semibold text-[var(--mut)] hover:text-[var(--ink)] ${focusRing}`;
 
 /** Preview / Print / Download: icon over a short label on phones, icon beside it from 640px. */
-const fileBtn = `inline-flex min-w-0 flex-col items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-[var(--line)] bg-transparent px-2 py-2 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--pine)] disabled:cursor-wait disabled:opacity-60 sm:h-9 sm:flex-row sm:gap-1.5 sm:px-3 sm:py-0 sm:text-sm ${focusRing}`;
+const fileBtn = `inline-flex min-h-[60px] min-w-0 flex-col items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-[var(--line)] bg-transparent px-2 py-2.5 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--pine)] hover:bg-[var(--tint)] disabled:cursor-wait disabled:opacity-60 sm:h-10 sm:min-h-0 sm:flex-row sm:gap-2 sm:px-4 sm:py-0 sm:text-sm ${focusRing}`;
 
 function Toast({ msg }: { msg: string }) {
   if (!msg) return null;
   return (
     <div
       role="status"
-      className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] left-1/2 z-50 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-full px-5 py-2.5 text-center text-[13px] font-semibold shadow-[var(--shadow-lg)] lg:bottom-8"
+      className="fixed bottom-[calc(96px+env(safe-area-inset-bottom))] left-1/2 z-50 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-full px-5 py-3 text-center text-[14px] font-semibold shadow-[var(--shadow-lg)] lg:bottom-8"
       style={{ background: 'var(--ink)', color: 'var(--bg)' }}
     >
       {msg}
@@ -106,11 +168,11 @@ function Toast({ msg }: { msg: string }) {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="px-4 py-3">
-      <p className="text-xs font-medium" style={mut}>
+    <div className="px-5 py-4">
+      <p className="text-[13px] font-medium" style={mut}>
         {label}
       </p>
-      <p className="mt-1 text-2xl font-bold leading-none tracking-tight tabular-nums">
+      <p className="mt-1.5 text-[34px] font-bold leading-none tracking-tight tabular-nums">
         {value}
       </p>
     </div>
@@ -119,8 +181,8 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 
 function MetaLine({ icon, children }: { icon: string; children: React.ReactNode }) {
   return (
-    <p className="flex min-w-0 items-start gap-2 text-[13px]" style={mut}>
-      <i className={`ti ${icon} mt-[2px] shrink-0 text-[16px]`} aria-hidden="true" />
+    <p className="flex min-w-0 items-start gap-2.5 text-[14px]">
+      <i className={`ti ${icon} mt-[2px] shrink-0 text-[18px]`} style={mut} aria-hidden="true" />
       <span className="min-w-0 break-words">{children}</span>
     </p>
   );
@@ -133,13 +195,12 @@ export function ManagePage() {
   const navState = (loc.state ?? null) as { passcode?: string; toast?: string } | null;
 
   const session = useAsync(() => sessionsApi.getMine(id), [id]);
-  const [busy, setBusy] = useState<'pdf' | null>(null);
+  const [busy, setBusy] = useState<'pdf' | 'delete' | null>(null);
   const [absentList, setAbsentList] = useState<string[] | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [toast, setToast] = useState('');
   const [editing, setEditing] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
-  const [manual, setManual] = useState('');
   const [newPass, setNewPass] = useState<string | null>(null);
   const timer = useRef<number | undefined>(undefined);
 
@@ -177,7 +238,7 @@ export function ManagePage() {
     try {
       await fn();
       if (ok) say(ok);
-      session.reload();
+      await session.reload();
       setAbsentList(null);
       return true;
     } catch (e) {
@@ -286,12 +347,17 @@ export function ManagePage() {
     }
   };
 
-  const remove = () => {
-    setConfirmDel(false);
-    void run(async () => {
+  const remove = async () => {
+    setBusy('delete');
+    setError(null);
+    try {
       await sessionsApi.remove(id);
+      setConfirmDel(false);
       nav('/mine');
-    });
+    } catch (e) {
+      setError(e as ApiError);
+      setBusy(null);
+    }
   };
 
   /* ---------------- Edit view ---------------- */
@@ -322,51 +388,67 @@ export function ManagePage() {
 
   return (
     <div className="min-w-0">
-      <Link to="/mine" className={backCls}>
-        <i className="ti ti-arrow-left text-[14px]" aria-hidden="true" />
-        Back
-      </Link>
+      {/* Top bar: Back on the left, Edit and Delete on the right */}
+      <div className="flex items-center justify-between gap-3">
+        <Link to="/mine" className={backCls}>
+          <i className="ti ti-arrow-left text-[16px]" aria-hidden="true" />
+          Back
+        </Link>
+        {s && (
+          <div className="flex shrink-0 items-center gap-2">
+            <Button type="button" variant="outline" className="h-10 px-3 min-[400px]:px-4" aria-label="Edit session" onClick={() => setEditing(true)}>
+              <i className="ti ti-edit text-[18px] min-[400px]:mr-1.5" aria-hidden="true" />
+              <span className="hidden min-[400px]:inline">Edit</span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 px-3 !text-[var(--err)] min-[400px]:px-4"
+              aria-label="Delete session"
+              onClick={() => setConfirmDel(true)}
+            >
+              <i className="ti ti-trash text-[18px] min-[400px]:mr-1.5" aria-hidden="true" />
+              <span className="hidden min-[400px]:inline">Delete</span>
+            </Button>
+          </div>
+        )}
+      </div>
 
       <ErrorBox error={session.error} />
 
       {session.loading && !s && (
         <>
           {/* Header skeleton */}
-          <header className="mt-3">
+          <header className="mt-4">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <Skeleton className="h-9 w-64 max-w-full" />
-              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-10 w-64 max-w-full" />
+              <Skeleton className="h-7 w-16" />
             </div>
-            <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-            </div>
+            <Skeleton className="mt-4 h-28 w-full rounded-2xl" />
           </header>
 
-          <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
+          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
             {/* Stats card skeleton */}
-            <div className="min-w-0 space-y-5">
+            <div className="min-w-0 space-y-6">
               <Card>
                 <CardHeader className="flex-row items-center justify-between space-y-0">
                   <Skeleton className="h-6 w-32" />
                   <Skeleton className="h-6 w-16" />
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 divide-x divide-[var(--line)] rounded-xl border border-[var(--line)]">
-                    <div className="space-y-2 px-4 py-3">
+                  <div className="grid grid-cols-2 divide-x divide-[var(--line)] rounded-2xl border border-[var(--line)]">
+                    <div className="space-y-2 px-5 py-4">
                       <Skeleton className="h-3 w-20" />
-                      <Skeleton className="h-8 w-12" />
+                      <Skeleton className="h-9 w-12" />
                     </div>
-                    <div className="space-y-2 px-4 py-3">
+                    <div className="space-y-2 px-5 py-4">
                       <Skeleton className="h-3 w-20" />
-                      <Skeleton className="h-8 w-12" />
+                      <Skeleton className="h-9 w-12" />
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-12 w-full" />
                 </CardFooter>
               </Card>
 
@@ -376,15 +458,15 @@ export function ManagePage() {
                   <Skeleton className="h-6 w-40" />
                   <Skeleton className="h-4 w-full" />
                 </CardHeader>
-                <CardContent className="space-y-2.5">
+                <CardContent className="space-y-3">
                   {[1, 2].map((i) => (
-                    <div key={i} className="flex items-center gap-3.5 rounded-xl border border-[var(--line)] bg-[var(--card)] p-3">
-                      <Skeleton className="h-11 w-11 shrink-0 rounded-xl" />
+                    <div key={i} className="flex items-center gap-4 rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4">
+                      <Skeleton className="h-12 w-12 shrink-0 rounded-xl" />
                       <div className="min-w-0 flex-1 space-y-1.5">
                         <Skeleton className="h-4 w-48 max-w-full" />
                         <Skeleton className="h-3 w-32 max-w-full" />
                       </div>
-                      <Skeleton className="hidden h-8 w-24 sm:block" />
+                      <Skeleton className="hidden h-10 w-24 sm:block" />
                     </div>
                   ))}
                 </CardContent>
@@ -392,7 +474,7 @@ export function ManagePage() {
             </div>
 
             {/* Right sidebar skeleton */}
-            <div className="grid min-w-0 content-start gap-5 md:grid-cols-2 md:items-start lg:grid-cols-1">
+            <div className="grid min-w-0 content-start gap-6 md:grid-cols-2 md:items-start lg:grid-cols-1">
               <Card>
                 <CardHeader>
                   <Skeleton className="h-6 w-32" />
@@ -407,9 +489,9 @@ export function ManagePage() {
                   <Skeleton className="h-6 w-24" />
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Skeleton className="h-9 w-full" />
-                    <Skeleton className="h-9 w-full" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Skeleton className="h-11 w-full" />
+                    <Skeleton className="h-11 w-full" />
                   </div>
                 </CardContent>
               </Card>
@@ -421,16 +503,15 @@ export function ManagePage() {
       {s && (
         <>
           {/* ---------- Header ---------- */}
-          <header className="mt-3">
+          <header className="mt-4">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <h1
-                className="min-w-0 break-words text-[26px] font-semibold leading-[1.1] tracking-tight sm:text-[32px] lg:text-[36px]"
-              >
+              <h1 className="min-w-0 break-words text-[28px] font-semibold leading-[1.1] tracking-tight sm:text-[34px] lg:text-[40px]">
                 {s.title}
               </h1>
               <StatusChip status={s.status} />
             </div>
-            <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
+            {/* Session details sit in one tidy panel instead of loose lines */}
+            <div className="mt-4 grid gap-x-6 gap-y-3 rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 sm:grid-cols-2 sm:p-5">
               <MetaLine icon="ti-map-pin">
                 {s.venue} · {s.radius} m radius
               </MetaLine>
@@ -446,9 +527,9 @@ export function ManagePage() {
 
           <ErrorBox error={error} />
 
-          <div className="mt-5 grid gap-5 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
+          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
             {/* ---------- Left / main column ---------- */}
-            <div className="min-w-0 space-y-5">
+            <div className="min-w-0 space-y-6">
               {/* Attendance overview */}
               <Card>
                 <CardHeader className="flex-row items-center justify-between space-y-0">
@@ -460,20 +541,20 @@ export function ManagePage() {
                   )}
                 </CardHeader>
                 <CardContent>
-                  <div className={`grid divide-x divide-[var(--line)] rounded-xl border border-[var(--line)] ${expected ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  <div className={`grid divide-x divide-[var(--line)] rounded-2xl border border-[var(--line)] ${expected ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     <Stat label="Checked in" value={count} />
                     {expected ? <Stat label="Expected" value={expected} /> : null}
                   </div>
 
                   {expected ? (
-                    <div className="mt-4">
-                      <div className="h-2 overflow-hidden rounded-full" style={{ background: 'var(--line)' }}>
+                    <div className="mt-5">
+                      <div className="h-2.5 overflow-hidden rounded-full" style={{ background: 'var(--line)' }}>
                         <div
                           className="h-full rounded-full transition-[width] duration-500"
                           style={{ background: 'var(--sig)', width: `${pct}%` }}
                         />
                       </div>
-                      <p className="mt-1.5 text-[13px]" style={mut}>
+                      <p className="mt-2 text-[13px]" style={mut}>
                         {count} of {expected} expected · {pct}%
                       </p>
                     </div>
@@ -483,7 +564,7 @@ export function ManagePage() {
                   <Button
                     type="button"
                     variant={isOpen ? 'outline' : 'default'}
-                    className="w-full"
+                    className="h-12 w-full text-[15px]"
                     onClick={() =>
                       run(
                         () => sessionsApi.setStatus(id, isOpen ? 'close' : 'open'),
@@ -491,7 +572,7 @@ export function ManagePage() {
                       )
                     }
                   >
-                    <i className={`ti ${isOpen ? 'ti-lock' : 'ti-lock-open'} mr-2 text-[18px]`} aria-hidden="true" />
+                    <i className={`ti ${isOpen ? 'ti-lock' : 'ti-lock-open'} mr-2 text-[20px]`} aria-hidden="true" />
                     {isOpen ? 'Close attendance' : 'Open attendance'}
                   </Button>
                 </CardFooter>
@@ -505,86 +586,55 @@ export function ManagePage() {
                     The full list stays out of the page, so it opens instantly with any number of attendees.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2.5">
+                <CardContent className="space-y-3">
                   <FileRow
                     icon="ti-file-type-pdf"
                     tint="#DC2626"
                     name="Attendance sheet"
                     meta={`PDF document · ${count} check-in${count === 1 ? '' : 's'}`}
                   >
-                    <div className="grid grid-cols-3 gap-1.5 sm:flex sm:shrink-0">
+                    <div className="grid grid-cols-3 gap-2 sm:flex sm:shrink-0">
                       <Link to={`/manage/${id}/sheet?view=1`} className={fileBtn}>
-                        <i className="ti ti-eye text-[18px] sm:text-[16px]" aria-hidden="true" />
+                        <i className="ti ti-eye text-[22px] sm:text-[18px]" aria-hidden="true" />
                         <span>Preview</span>
                       </Link>
                       <Link to={`/manage/${id}/sheet?print=1`} className={fileBtn}>
-                        <i className="ti ti-printer text-[18px] sm:text-[16px]" aria-hidden="true" />
+                        <i className="ti ti-printer text-[22px] sm:text-[18px]" aria-hidden="true" />
                         <span>Print</span>
                       </Link>
                       <button type="button" className={fileBtn} onClick={downloadPdf} disabled={busy === 'pdf'} aria-busy={busy === 'pdf'}>
                         <i
-                          className={`ti ${busy === 'pdf' ? 'ti-loader-2 animate-spin' : 'ti-download'} text-[18px] sm:text-[16px]`}
+                          className={`ti ${busy === 'pdf' ? 'ti-loader-2 animate-spin' : 'ti-download'} text-[22px] sm:text-[18px]`}
                           aria-hidden="true"
                         />
                         <span>{busy === 'pdf' ? 'Preparing' : 'Download'}</span>
                       </button>
                     </div>
                   </FileRow>
-                </CardContent>
-              </Card>
-              {count === 0 && (
-                <p className="pt-1 text-center text-[13px]" style={mut}>
-                  No check-ins yet. You can still print the sheet with blank rows to sign by hand.
-                </p>
-              )}
-
-              {/* Manual add form */}
-              <Card>
-                <CardContent className="pt-6">
-                  <form
-                    className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-end min-[420px]:gap-2"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (!manual.trim()) return say('Type a name first');
-                      void run(async () => {
-                        await sessionsApi.addManual(id, { name: manual.trim() });
-                        setManual('');
-                      }, 'Attendee added');
-                    }}
-                  >
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <Label htmlFor="manual-name">Add attendee manually</Label>
-                      <Input
-                        id="manual-name"
-                        placeholder="Full name"
-                        value={manual}
-                        onChange={(e) => setManual(e.target.value)}
-                      />
-                    </div>
-                    <Button type="submit" variant="outline" size="sm" className="w-full min-[420px]:mb-1 min-[420px]:w-auto">
-                      <i className="ti ti-plus mr-1 text-[16px]" aria-hidden="true" />
-                      Add
-                    </Button>
-                  </form>
+                  {count === 0 && (
+                    <p className="pt-1 text-center text-[13px]" style={mut}>
+                      No check-ins yet. You can still print the sheet with blank rows to sign by hand.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
               {/* Not checked in (emails only), loaded on demand */}
               {s.verification === 'email' && (
                 <Card>
-                  <CardHeader className="flex-col items-start gap-3 space-y-0 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+                  <CardHeader className="flex-col items-start gap-3 space-y-0 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between">
                     <div className="min-w-0">
                       <CardTitle>Not checked in{absentList ? ` (${absentList.length})` : ''}</CardTitle>
                       <CardDescription>Authorized emails that have not checked in yet.</CardDescription>
                     </div>
-                    <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={loadAbsent}>
+                    <Button type="button" variant="outline" className="h-10 shrink-0" onClick={loadAbsent}>
                       {absentList ? 'Refresh' : 'Show list'}
                     </Button>
                   </CardHeader>
                   {absentList && (
                     <CardContent>
                       {absentList.length ? (
-                        <div className="flex max-h-56 flex-wrap gap-1.5 overflow-auto">
+                        <div className="flex max-h-64 flex-wrap gap-2 overflow-auto">
                           {absentList.map((m) => (
                             <Badge key={m} variant="secondary" className="max-w-full break-all">
                               {m}
@@ -592,7 +642,7 @@ export function ManagePage() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-[13px]" style={mut}>
+                        <p className="text-[14px]" style={mut}>
                           Everyone on the list has checked in.
                         </p>
                       )}
@@ -603,14 +653,15 @@ export function ManagePage() {
             </div>
 
             {/* ---------- Right / side column (2 columns on tablet, 1 on desktop) ---------- */}
-            <div className="grid min-w-0 content-start gap-5 md:grid-cols-2 md:items-start lg:grid-cols-1">
+            <div className="grid min-w-0 content-start gap-6 md:grid-cols-2 md:items-start lg:grid-cols-1">
               {/* Verification */}
               {s.verification === 'passcode' && (
                 <Card tone="tint">
                   <CardHeader className="flex-row items-center justify-between space-y-0">
                     <CardTitle>Passcode</CardTitle>
                     {pass ? (
-                      <Button type="button" variant="outline" size="sm" onClick={() => copy(pass, 'Passcode copied')}>
+                      <Button type="button" variant="outline" className="h-10" onClick={() => copy(pass, 'Passcode copied')}>
+                        <i className="ti ti-copy mr-1.5 text-[16px]" aria-hidden="true" />
                         Copy
                       </Button>
                     ) : (
@@ -618,7 +669,7 @@ export function ManagePage() {
                         <Button
                           type="button"
                           variant="outline"
-                          size="sm"
+                          className="h-10"
                           onClick={() =>
                             run(async () => {
                               const r = await sessionsApi.newPasscode(id);
@@ -632,10 +683,10 @@ export function ManagePage() {
                     )}
                   </CardHeader>
                   <CardContent>
-                    <p className="break-all font-mono text-[20px] font-semibold leading-none tracking-[0.04em] min-[400px]:text-[24px] sm:text-[28px]">
+                    <p className="break-all rounded-xl bg-[var(--card)] px-4 py-4 text-center font-mono text-[24px] font-semibold leading-none tracking-[0.06em] sm:text-[28px]">
                       {pass ?? '••••••••'}
                     </p>
-                    <p className="mt-2 text-[13px]" style={mut}>
+                    <p className="mt-3 text-[13px] leading-relaxed" style={mut}>
                       {pass
                         ? 'Share it only with people who should check in.'
                         : 'Passcodes are hashed and cannot be shown again. Generate a new one before the first check-in.'}
@@ -651,7 +702,7 @@ export function ManagePage() {
                     <CardDescription>Only these addresses can check in.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {s.allowedEmails.slice(0, 8).map((m) => (
                         <Badge key={m} variant="secondary" className="max-w-full break-all">
                           {m}
@@ -665,67 +716,84 @@ export function ManagePage() {
                 </Card>
               )}
 
-              {s.verification === 'location' && (
-                <Card tone="tint">
-                  <CardHeader>
-                    <CardTitle>Location only</CardTitle>
-                    <CardDescription>Anyone inside the radius can check in.</CardDescription>
-                  </CardHeader>
-                </Card>
-              )}
-
               {/* Share link - shown for ALL sessions */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Share link</CardTitle>
+                  <CardTitle>Share</CardTitle>
                   <CardDescription>Help people find this session easily.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-2 rounded-xl border border-[var(--line)] p-2">
-                    <span className="min-w-0 flex-1 break-all text-[12px]" style={mut}>
-                      {s.shareLink}
-                    </span>
-                    <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => copy(s.shareLink, 'Link copied')}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-[104px] shrink-0 rounded-xl bg-white p-2">
+                      <QRCodeSVG value={s.shareLink} size={88} style={{ display: 'block', width: '100%', height: 'auto' }} />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 min-w-0 flex-1"
+                      onClick={() => copy(s.shareLink, 'Copied')}
+                    >
+                      <i className="ti ti-copy mr-1.5 text-[18px]" aria-hidden="true" />
                       Copy
                     </Button>
                   </div>
-                  <div className="mx-auto mt-4 w-[168px] rounded-xl bg-white p-2">
-                    <QRCodeSVG value={s.shareLink} size={152} />
-                  </div>
-                  <p className="mt-2 text-center text-[13px]" style={mut}>
-                    Share this link or show the QR code
-                  </p>
                 </CardContent>
               </Card>
 
-              {/* Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Actions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>
-                      <i className="ti ti-edit mr-1.5 text-[16px]" aria-hidden="true" />
-                      Edit
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setConfirmDel(true)}
-                    >
-                      <i className="ti ti-trash mr-1.5 text-[16px]" aria-hidden="true" />
-                      Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Schedule info (read-only, same look as the Create page) */}
+              {s.schedule?.enabled && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Repeats weekly</CardTitle>
+                    <CardDescription>This session opens automatically on these days.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-7 gap-1.5" role="list" aria-label="Active days">
+                      {DAYS.map((day, idx) => {
+                        const active = s.schedule!.daysOfWeek.includes(idx);
+                        return (
+                          <span
+                            key={day}
+                            role="listitem"
+                            aria-label={`${DAYS_LONG[idx]}${active ? ', active' : ', off'}`}
+                            className="grid h-9 min-w-0 place-items-center rounded-full border text-[11px] font-semibold"
+                            style={{
+                              borderColor: active ? 'var(--pine)' : 'var(--line)',
+                              borderWidth: active ? 2 : 1,
+                              background: active ? 'var(--tint)' : 'transparent',
+                              color: active ? 'var(--ink)' : 'var(--mut)',
+                              opacity: active ? 1 : 0.55,
+                              fontWeight: active ? 700 : 600,
+                            }}
+                          >
+                            {day}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <p className="flex items-start gap-2 text-[13px]" style={mut}>
+                      <i className="ti ti-calendar-repeat mt-0.5 shrink-0 text-[16px] text-[var(--pine)]" aria-hidden="true" />
+                      <span>
+                        Opens <strong className="font-semibold text-[var(--ink)]">{describeDays(s.schedule.daysOfWeek)}</strong> at{' '}
+                        <strong className="font-semibold text-[var(--ink)]">{timeOf(new Date(s.startsAt))}</strong>
+                        {s.schedule.autoClose ? (
+                          <>
+                            {' '}and closes at{' '}
+                            <strong className="font-semibold text-[var(--ink)]">{timeOf(new Date(s.endsAt))}</strong>.
+                          </>
+                        ) : (
+                          <>. You close it yourself.</>
+                        )}
+                      </span>
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
 
           {/* Delete confirmation */}
-          <Dialog open={confirmDel} onOpenChange={setConfirmDel}>
+          <Dialog open={confirmDel} onOpenChange={(open) => !busy && setConfirmDel(open)}>
             <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>Delete this session?</DialogTitle>
@@ -734,11 +802,30 @@ export function ManagePage() {
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
-                <Button type="button" variant="outline" onClick={() => setConfirmDel(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  onClick={() => setConfirmDel(false)}
+                  disabled={busy === 'delete'}
+                >
                   Keep session
                 </Button>
-                <Button type="button" variant="destructive" onClick={remove}>
-                  Delete
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="h-11"
+                  onClick={remove}
+                  disabled={busy === 'delete'}
+                >
+                  {busy === 'delete' ? (
+                    <>
+                      <i className="ti ti-loader-2 mr-2 animate-spin text-[18px]" aria-hidden="true" />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete'
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -769,9 +856,19 @@ function EditView({
     ts: toLocalInput(s.startsAt).slice(11, 16),
     te: toLocalInput(s.endsAt).slice(11, 16),
     radius: s.radius,
+    scheduleEnabled: s.schedule?.enabled ?? false,
+    scheduleDays: s.schedule?.daysOfWeek ?? [],
+    scheduleAutoClose: s.schedule?.autoClose ?? true,
   }));
   const [err, setErr] = useState('');
-  const dateCls = '[color-scheme:light_dark] min-w-0 text-[13px] min-[480px]:text-base';
+  const dateCls = '[color-scheme:light_dark] min-w-0 text-[14px] min-[480px]:text-base';
+
+  const toggleScheduleDay = (day: number) => {
+    const days = f.scheduleDays.includes(day)
+      ? f.scheduleDays.filter((d) => d !== day)
+      : [...f.scheduleDays, day].sort((a, b) => a - b);
+    setF({ ...f, scheduleDays: days });
+  };
 
   const save = () => {
     if (!f.title.trim() || !f.venue.trim()) return setErr('Title and venue are required.');
@@ -779,6 +876,8 @@ function EditView({
     const b = new Date(`${f.dt}T${f.te}`);
     if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime()) || b <= a)
       return setErr('The end time must be after the start time.');
+    if (f.scheduleEnabled && f.scheduleDays.length === 0)
+      return setErr('Select at least one day when schedule is enabled.');
     setErr('');
     onSave({
       title: f.title.trim(),
@@ -787,17 +886,22 @@ function EditView({
       startsAt: a.toISOString(),
       endsAt: b.toISOString(),
       ...(locked ? {} : { lat: s.location.lat, lng: s.location.lng, radius: f.radius }),
+      schedule: {
+        enabled: f.scheduleEnabled,
+        daysOfWeek: f.scheduleDays,
+        autoClose: f.scheduleAutoClose,
+      },
     });
   };
 
   return (
-    <div className="mx-auto max-w-[640px]">
+    <div className="mx-auto max-w-[680px]">
       <button type="button" className={backCls} onClick={onBack}>
-        <i className="ti ti-arrow-left text-[14px]" aria-hidden="true" />
+        <i className="ti ti-arrow-left text-[16px]" aria-hidden="true" />
         Back
       </button>
 
-      <Card className="mt-3">
+      <Card className="mt-4">
         <CardHeader>
           <CardTitle>Edit session</CardTitle>
           <CardDescription>
@@ -807,7 +911,7 @@ function EditView({
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-5">
+        <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="edit-title">Title</Label>
             <Input id="edit-title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
@@ -819,7 +923,7 @@ function EditView({
           </div>
 
           {/* Phone: date on its own row, start and end side by side. 480px and up: all three on one row. */}
-          <div className="grid grid-cols-2 items-end gap-3 min-[480px]:grid-cols-[1.3fr_1fr_1fr]">
+          <div className="grid grid-cols-2 items-end gap-4 min-[480px]:grid-cols-[1.3fr_1fr_1fr]">
             <div className="col-span-2 min-w-0 space-y-2 min-[480px]:col-span-1">
               <Label htmlFor="edit-date">Date</Label>
               <Input
@@ -853,7 +957,7 @@ function EditView({
           </div>
 
           {!locked && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label htmlFor="edit-radius">Check-in radius: {f.radius} m</Label>
               <input
                 id="edit-radius"
@@ -862,23 +966,131 @@ function EditView({
                 max={400}
                 value={f.radius}
                 onChange={(e) => setF({ ...f, radius: Number(e.target.value) })}
-                className="w-full accent-[var(--sig)]"
+                className="h-6 w-full accent-[var(--sig)]"
               />
             </div>
           )}
 
+          {/* Schedule */}
+          <div className="rounded-2xl border border-[var(--line)]">
+            <div className="flex items-start justify-between gap-4 p-4 sm:p-5">
+              <label htmlFor="edit-schedule-enabled" className="min-w-0 cursor-pointer">
+                <span className="block text-[15px] font-semibold">Repeat weekly</span>
+                <span className="mt-0.5 block text-[13px]" style={mut}>
+                  Open this session automatically on the days you choose.
+                </span>
+              </label>
+              <Switch
+                id="edit-schedule-enabled"
+                label="Repeat weekly"
+                checked={f.scheduleEnabled}
+                onChange={(v) => setF({ ...f, scheduleEnabled: v })}
+              />
+            </div>
+
+            {f.scheduleEnabled && (
+              <div className="space-y-5 border-t border-[var(--line)] p-4 sm:p-5">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Label>Repeat on</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PRESETS.map((pr) => {
+                        const active = sameDays(f.scheduleDays, pr.days);
+                        return (
+                          <button
+                            key={pr.label}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={() => setF({ ...f, scheduleDays: pr.days })}
+                            className={`rounded-full px-2.5 py-1 text-[12px] font-semibold transition-colors hover:text-[var(--ink)] ${focusRing}`}
+                            style={{
+                              color: active ? 'var(--pine)' : 'var(--mut)',
+                              background: active ? 'var(--tint)' : 'transparent',
+                            }}
+                          >
+                            {pr.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5" role="group" aria-label="Days of the week">
+                    {DAYS.map((day, idx) => {
+                      const selected = f.scheduleDays.includes(idx);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          aria-pressed={selected}
+                          aria-label={DAYS_LONG[idx]}
+                          onClick={() => toggleScheduleDay(idx)}
+                          className={`grid h-10 min-w-0 place-items-center rounded-full border text-[11px] font-semibold transition-colors min-[420px]:text-[13px] ${focusRing}`}
+                          style={{
+                            borderColor: selected ? 'var(--pine)' : 'var(--line)',
+                            borderWidth: selected ? 2 : 1,
+                            background: selected ? 'var(--tint)' : 'transparent',
+                            color: 'var(--ink)',
+                            fontWeight: selected ? 700 : 600,
+                          }}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {f.scheduleDays.length === 0 ? (
+                    <p className="text-[13px] font-semibold" style={{ color: 'var(--err)' }} role="alert">
+                      Pick at least one day.
+                    </p>
+                  ) : (
+                    <p className="flex items-start gap-2 text-[13px]" style={mut}>
+                      <i className="ti ti-calendar-repeat mt-0.5 shrink-0 text-[16px] text-[var(--pine)]" aria-hidden="true" />
+                      <span>
+                        Opens <strong className="font-semibold text-[var(--ink)]">{describeDays(f.scheduleDays)}</strong> at{' '}
+                        <strong className="font-semibold text-[var(--ink)]">{fmt12(f.ts)}</strong>
+                        {f.scheduleAutoClose && (
+                          <>
+                            {' '}and closes at <strong className="font-semibold text-[var(--ink)]">{fmt12(f.te)}</strong>
+                          </>
+                        )}
+                        .
+                      </span>
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--line)] px-3.5 py-3">
+                  <label htmlFor="edit-schedule-auto-close" className="min-w-0 cursor-pointer">
+                    <span className="block text-sm font-semibold">Close automatically</span>
+                    <span className="block text-[13px]" style={mut}>
+                      Ends check-in at the end time. Turn off to close it yourself.
+                    </span>
+                  </label>
+                  <Switch
+                    id="edit-schedule-auto-close"
+                    label="Close automatically at end time"
+                    checked={f.scheduleAutoClose}
+                    onChange={(v) => setF({ ...f, scheduleAutoClose: v })}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {err && (
-            <p role="alert" className="text-[13px] font-semibold" style={{ color: 'var(--err)' }}>
+            <p role="alert" className="text-[14px] font-semibold" style={{ color: 'var(--err)' }}>
               {err}
             </p>
           )}
         </CardContent>
 
-        <CardFooter className="flex-col-reverse gap-2 min-[360px]:flex-row">
-          <Button type="button" variant="outline" className="w-full min-[360px]:flex-1" onClick={onBack}>
+        <CardFooter className="flex-col-reverse gap-3 min-[360px]:flex-row">
+          <Button type="button" variant="outline" className="h-12 w-full min-[360px]:flex-1" onClick={onBack}>
             Cancel
           </Button>
-          <Button type="button" className="w-full min-[360px]:flex-1" onClick={save}>
+          <Button type="button" className="h-12 w-full min-[360px]:flex-1" onClick={save}>
             Save changes
           </Button>
         </CardFooter>

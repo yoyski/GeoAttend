@@ -55,7 +55,8 @@ type Cfg = {
 
 const MAX_COLS = 12;
 const ROW_OPTIONS = [5, 10, 15, 20, 25, 30, 35, 40, 50];
-const COL_W: Partial<Record<ColKey, number>> = { no: 44, time: 90 };
+// FIX 1: wider time column so "11:51 AM" / long date text fits on one line.
+const COL_W: Partial<Record<ColKey, number>> = { no: 44, time: 104 };
 const uid = () => Math.random().toString(36).slice(2, 8);
 
 /** Column kinds that older saved sheets may contain but that no longer exist. */
@@ -537,6 +538,8 @@ export function SheetPage() {
             style={{
               width: '100%',
               height: '100%',
+              // FIX 2: fixed layout so column widths never depend on cell content.
+              tableLayout: 'fixed',
               borderCollapse: 'collapse',
               border: `1.5px solid ${ac}`,
             }}
@@ -558,6 +561,10 @@ export function SheetPage() {
                       borderBottom: `2px solid ${ac}`,
                       width: COL_W[c.k],
                       height: 37,
+                      // FIX 3: never wrap, truncate instead.
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                     }}
                   >
                     {c.l}
@@ -581,6 +588,10 @@ export function SheetPage() {
                           color: c.k === 'no' ? '#9CA3AF' : '#111',
                           fontVariantNumeric: 'tabular-nums',
                           verticalAlign: 'middle',
+                          // FIX 3: keep each row on one line so row height can't outgrow the page.
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                         }}
                       >
                         {cellValue(c, r)}

@@ -27,6 +27,9 @@ export function creatorDto(s: SessionDoc, checkInCount: number) {
     locked: checkInCount > 0,
     sheetLocked: s.sheetLocked ?? false,
     createdAt: (s as unknown as { createdAt?: Date }).createdAt,
+    schedule: s.schedule && typeof s.schedule === 'object' && 'enabled' in s.schedule
+      ? s.schedule
+      : { enabled: false, daysOfWeek: [], autoClose: true },
   };
 }
 

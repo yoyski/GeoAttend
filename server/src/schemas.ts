@@ -40,10 +40,15 @@ const sessionFields = z.object({
   passcode: z.string().min(6).max(32),
   allowedEmails: z.array(email).max(2000),
   lateAfterTime: z.coerce.date(),
+  schedule: z.object({
+    enabled: z.boolean(),
+    daysOfWeek: z.array(z.number().int().min(0).max(6)).max(7),
+    autoClose: z.boolean(),
+  }).strict(),
 });
 
 export const createSessionBody = sessionFields
-  .partial({ description: true, passcode: true, allowedEmails: true, lateAfterTime: true })
+  .partial({ description: true, passcode: true, allowedEmails: true, lateAfterTime: true, schedule: true })
   .strict()
   .superRefine((v, ctx) => {
     if (v.endsAt <= v.startsAt) ctx.addIssue({ code: 'custom', path: ['endsAt'], message: 'End must be after start.' });
@@ -51,6 +56,8 @@ export const createSessionBody = sessionFields
       ctx.addIssue({ code: 'custom', path: ['allowedEmails'], message: 'Add at least one email.' });
     if (v.lateAfterTime && (v.lateAfterTime <= v.startsAt || v.lateAfterTime > v.endsAt))
       ctx.addIssue({ code: 'custom', path: ['lateAfterTime'], message: 'Late time must be between start and end.' });
+    if (v.schedule?.enabled && (!v.schedule.daysOfWeek || v.schedule.daysOfWeek.length === 0))
+      ctx.addIssue({ code: 'custom', path: ['schedule', 'daysOfWeek'], message: 'Select at least one day when schedule is enabled.' });
   });
 
 

@@ -26,6 +26,12 @@ const sessionSchema = new Schema(
     lateAfterTime: { type: Date }, // Optional: specific time to mark as late (if not set, no late marking)
     sheet: { type: Schema.Types.Mixed, default: null }, // printable sheet design settings
     sheetLocked: { type: Boolean, default: false }, // locked after first check-in, prevents editing
+    // Recurring schedule (optional)
+    schedule: {
+      enabled: { type: Boolean, default: false },
+      daysOfWeek: { type: [Number], default: [] }, // 0=Sunday, 1=Monday, ..., 6=Saturday
+      autoClose: { type: Boolean, default: true }, // Auto-close at endsAt when scheduled
+    },
   },
   { timestamps: true },
 );
