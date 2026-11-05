@@ -38,7 +38,9 @@ export const sessionsApi = {
 };
 
 export const meApi = {
-  get: () => api<Me>('get', '/me'),
+  // The "_" param changes on every call, so the browser can never answer this from a cached copy.
+  // A Cache-Control request header is avoided on purpose: the server's CORS allowedHeaders does not list it.
+  get: () => api<Me>('get', '/me', { params: { _: Date.now() } }),
   patch: (data: { name?: string; avatar?: string | null; notifications?: { reminders?: boolean; checkIn?: boolean } }) =>
     api<Me>('patch', '/me', { data }),
   remove: () => api<void>('delete', '/me'),
@@ -58,4 +60,3 @@ export const authApi = {
   changePassword: (currentPassword: string, newPassword: string) =>
     api<{ message: string }>('post', '/me/password', { data: { currentPassword, newPassword } }),
 };
-
