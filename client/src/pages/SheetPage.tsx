@@ -156,8 +156,9 @@ function loadRaw(id: string): unknown {
 /* ------------------------------------------------------------------ */
 const mut = { color: 'var(--mut)' } as const;
 const check = 'h-[22px] w-[22px] shrink-0 cursor-pointer accent-[var(--pine)]';
+// Slightly smaller (32px) so checkbox + name + 3 buttons fit on one line.
 const miniBtn =
-  'grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[var(--line)] text-[14px] leading-none text-[var(--mut)] hover:border-[var(--pine)] hover:text-[var(--ink)] disabled:opacity-30 disabled:hover:border-[var(--line)] disabled:hover:text-[var(--mut)] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[var(--sig)]';
+  'grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[var(--line)] text-[14px] leading-none text-[var(--mut)] hover:border-[var(--pine)] hover:text-[var(--ink)] disabled:opacity-30 disabled:hover:border-[var(--line)] disabled:hover:text-[var(--mut)] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[var(--sig)]';
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]';
 
@@ -869,10 +870,11 @@ export function SheetPage() {
                   {locked && ' (Sheet locked after first check-in)'}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2.5">
+              <CardContent className="space-y-3">
                 {cfg.cols.map((c, i) => (
                   <div key={c.id}>
-                    <div className="flex flex-wrap items-center gap-2">
+                    {/* One line: checkbox, name, then up / down / remove. It never wraps. */}
+                    <div className="flex flex-nowrap items-center gap-2">
                       <input
                         type="checkbox"
                         className={check}
@@ -884,13 +886,13 @@ export function SheetPage() {
                       <Input
                         type="text"
                         aria-label="Column label"
-                        className="min-w-0 flex-1 basis-[130px]"
+                        className="min-w-0 flex-1"
                         value={c.l}
                         maxLength={30}
                         disabled={locked}
                         onChange={(e) => setCol(i, { l: e.target.value })}
                       />
-                      <div className="ml-auto flex shrink-0 items-center gap-2">
+                      <div className="flex shrink-0 items-center gap-1">
                         <button
                           type="button"
                           className={miniBtn}
@@ -920,19 +922,20 @@ export function SheetPage() {
                             <i className="ti ti-x" aria-hidden="true" />
                           </button>
                         ) : (
-                          <span className="h-9 w-9 shrink-0" aria-hidden="true" />
+                          <span className="h-8 w-8 shrink-0" aria-hidden="true" />
                         )}
                       </div>
                     </div>
+
                     {c.k === 'custom' && (
-                      <div className="ml-[30px] mt-1.5 flex flex-wrap items-center gap-2 text-[13px]" style={mut}>
-                        <span className="text-[11px] font-semibold">Input type</span>
+                      <div className="ml-[30px] mt-2 flex items-center gap-2 text-[13px]" style={mut}>
+                        <span className="shrink-0 text-[12px] font-semibold">Input type</span>
                         <Select
                           value={c.inputType || 'text'}
                           disabled={locked}
                           onValueChange={(v) => setCol(i, { inputType: v as InputType })}
                         >
-                          <SelectTrigger className="w-[190px] max-w-full">
+                          <SelectTrigger className="min-w-0 flex-1">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -947,29 +950,33 @@ export function SheetPage() {
 
                 {/* Add your own column */}
                 {!locked && (
-                  <div className="space-y-2 pt-3">
+                  <div className="space-y-2 border-t border-[var(--line)] pt-4">
                     <Label htmlFor="new-col">Add a column</Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="new-col"
-                        type="text"
-                        placeholder="e.g. Contact no., Age, Section"
-                        className="min-w-0 flex-1"
-                        maxLength={30}
-                        value={newCol}
-                        onChange={(e) => setNewCol(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addCol();
-                          }
-                        }}
-                      />
-                      <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={addCol} disabled={!newCol.trim() || cfg.cols.length >= MAX_COLS}>
-                        <i className="ti ti-plus mr-1 text-[16px]" aria-hidden="true" />
-                        Add
-                      </Button>
-                    </div>
+                    <Input
+                      id="new-col"
+                      type="text"
+                      placeholder="e.g. Contact no., Age, Section"
+                      className="w-full"
+                      maxLength={30}
+                      value={newCol}
+                      onChange={(e) => setNewCol(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addCol();
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={addCol}
+                      disabled={!newCol.trim() || cfg.cols.length >= MAX_COLS}
+                    >
+                      <i className="ti ti-plus mr-1.5 text-[16px]" aria-hidden="true" />
+                      Add column
+                    </Button>
                     {cfg.cols.length >= MAX_COLS && (
                       <p className="text-[13px]" style={mut}>
                         Up to {MAX_COLS} columns.

@@ -13,7 +13,7 @@ function AppHeader() {
   const avatar: string | null | undefined = auth?.user?.avatar ?? auth?.me?.avatar ?? auth?.profile?.avatar;
 
   return (
-    <header className="mb-6 flex items-center justify-between">
+    <header className="mb-8 flex items-center justify-between">
       <div className="flex items-center gap-2.5 text-[17px] font-bold tracking-tight text-[var(--ink)]">
         <span className="grid h-9 w-9 place-items-center rounded-xl bg-black text-white shadow-[var(--shadow-md)] ring-1 ring-[var(--line)]">
           <svg width="22" height="22" viewBox="0 0 56 56" aria-hidden="true">
@@ -50,15 +50,15 @@ function AppHeader() {
 const navLinks = [
   { path: '/attend', label: 'Attend', icon: 'ti-circle-check' },
   { path: '/create', label: 'Create', icon: 'ti-circle-plus' },
-  { path: '/mine', label: 'My sessions', icon: 'ti-list-details' },
+  { path: '/mine', label: 'Mine', icon: 'ti-list-details' },
   { path: '/account', label: 'Account', icon: 'ti-user-circle' },
 ] as const;
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   [
-    'flex flex-1 max-w-[120px] flex-col items-center gap-0.5 rounded-2xl px-2 py-1.5 text-center text-[11px] font-semibold transition-all',
+    'flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2.5 text-center text-xs font-semibold transition-all',
     'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]',
-    'md:w-full md:max-w-none md:flex-none md:py-2.5',
+    'md:w-full md:flex-none md:py-3',
     isActive
       ? 'bg-[var(--tint)] text-[var(--pine)]'
       : 'text-[var(--mut)] hover:bg-[var(--field)] hover:text-[var(--ink)]',
@@ -77,7 +77,7 @@ export function Layout() {
         }}
       />
 
-      <main className="relative z-[1] mx-auto w-full max-w-[430px] px-4 pt-4 pb-32 sm:max-w-[560px] md:max-w-[980px] md:px-8 md:pt-8 md:pb-14">
+      <main className="relative z-[1] mx-auto w-full max-w-[480px] px-5 pt-6 pb-36 sm:max-w-[680px] md:max-w-[1100px] md:px-10 md:pt-10 md:pb-14">
         <AppHeader />
         <Outlet />
       </main>
@@ -85,12 +85,12 @@ export function Layout() {
       {/* Floating pill bar on phones, left rail on desktop */}
       <nav
         aria-label="Main"
-        className="fixed inset-x-3 bottom-3 z-30 flex justify-center gap-1 rounded-3xl border border-[var(--line)] bg-[color-mix(in_srgb,var(--card)_88%,transparent)] p-1.5 pb-[calc(6px+env(safe-area-inset-bottom,0px))] shadow-[var(--shadow-lg)] backdrop-blur-xl print:hidden md:inset-y-4 md:left-4 md:right-auto md:w-[88px] md:flex-col md:justify-start md:p-2"
+        className="fixed inset-x-3 bottom-3 z-30 flex justify-center gap-1 rounded-3xl border border-[var(--line)] bg-[color-mix(in_srgb,var(--card)_88%,transparent)] p-2 pb-[calc(8px+env(safe-area-inset-bottom,0px))] shadow-[var(--shadow-lg)] backdrop-blur-xl print:hidden md:inset-y-4 md:left-4 md:right-auto md:w-[96px] md:flex-col md:justify-start md:p-2"
       >
         {navLinks.map((link) => (
           <NavLink key={link.path} to={link.path} className={linkClass} title={link.label}>
-            <i className={`ti ${link.icon} text-[22px]`} aria-hidden="true" />
-            <span className="hidden leading-tight md:block">{link.label}</span>
+            <i className={`ti ${link.icon} text-[24px]`} aria-hidden="true" />
+            <span className="whitespace-nowrap leading-tight">{link.label}</span>
           </NavLink>
         ))}
       </nav>
