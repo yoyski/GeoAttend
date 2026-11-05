@@ -96,7 +96,7 @@ function ErrorCard({ error }: { error: unknown }) {
 
 export function AttendPage() {
   const [tab, setTab] = useState<'sessions' | 'history'>('sessions');
-  const { fix, gpsError } = useLocationCtx();
+  const { fix, gpsError, locationServicesDisabled, openLocationSettings } = useLocationCtx();
   const { user, loading: authLoading, goToLogin } = useRequireLogin();
 
   // The position used for the nearby search. It only moves when you have moved 20 m or more
@@ -159,6 +159,16 @@ export function AttendPage() {
                   <p role="alert" className="mt-2 text-[13px] font-semibold text-[var(--err)]">
                     {gpsError}
                   </p>
+                )}
+                {locationServicesDisabled && (
+                  <Button
+                    type="button"
+                    onClick={openLocationSettings}
+                    className="mt-3 w-full"
+                  >
+                    <i className="ti ti-current-location mr-2 text-[18px]" aria-hidden="true" />
+                    Open Location Settings
+                  </Button>
                 )}
               </Notice>
             )}

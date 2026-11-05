@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Capacitor } from '@capacitor/core';
 import type { Fix } from '../types';
 
 export const PRESETS: { label: string; fix: Fix }[] = [
@@ -16,8 +17,11 @@ interface LocationCtx {
   setManual: (f: Fix) => void;
   gps: Fix | null;
   gpsError: string;
+  locationServicesDisabled: boolean;
   /** The position every request uses right now. null until GPS has answered. */
   fix: Fix | null;
+  /** Opens device location settings */
+  openLocationSettings: () => void;
 }
 
 const Ctx = createContext<LocationCtx | null>(null);
@@ -35,12 +39,47 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [manual, setManual] = useState<Fix>(PRESETS[0]!.fix);
   const [gps, setGps] = useState<Fix | null>(null);
   const [gpsError, setGpsError] = useState('');
+  const [locationServicesDisabled, setLocationServicesDisabled] = useState(false);
   const watchIdRef = useRef<number | null>(null);
+  const isNative = Capacitor.isNativePlatform();
+
+  const openLocationSettings = () => {
+    if (isNative) {
+      // On Android, we can open the location settings
+      // This requires the App plugin from Capacitor
+      import('@capacitor/app').then(({ App }) => {
+        // For Android, we use an intent to open location settings
+        if (Capacitor.getPlatform() === 'android') {
+          // Use a custom intent to open location settings
+          (window as any).cordova?.plugins?.settings?.open('location', () => {
+            console.log('Opened location settings');
+          }, () => {
+            // Fallback: open app settings
+            App.openSettings?.();
+          });
+          // If cordova settings plugin not available, open app settings
+          setTimeout(() => {
+            App.openSettings?.();
+          }, 100);
+        } else {
+          App.openSettings?.();
+        }
+      }).catch(() => {
+        // Fallback
+        alert('Please enable location services in your device settings.');
+      });
+    } else {
+      // On web, provide instructions
+      alert('Please enable location services in your browser settings:\n\n1. Click the location icon in the address bar\n2. Select "Allow" for location access\n3. Refresh the page');
+    }
+  };
 
   useEffect(() => {
     if (mode !== 'gps') return;
 
     setGpsError('');
+    setLocationServicesDisabled(false);
+
     if (!navigator.geolocation) {
       setGpsError('Geolocation is not supported by this browser.');
       return;
@@ -53,14 +92,29 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         prev && metres(prev, next) < 5 && Math.abs(prev.accuracy - next.accuracy) < 10 ? prev : next,
       );
       setGpsError('');
+      setLocationServicesDisabled(false);
     };
 
     const handleError = (e: GeolocationPositionError) => {
       let message = 'Unable to get your location.';
-      if (e.code === 1) message = 'Location permission denied. Allow location access in your browser settings.';
-      else if (e.code === 2) message = 'Location unavailable. Check that location services are enabled.';
-      else if (e.code === 3) message = 'Location request timed out. Check your connection and try again.';
+      let servicesDisabled = false;
+
+      if (e.code === 1) {
+        // Permission denied
+        message = 'Location permission denied. Please allow location access in your settings.';
+        servicesDisabled = false;
+      } else if (e.code === 2) {
+        // Position unavailable - usually means location services are off
+        message = 'Location services are turned off. Please enable location services to check in.';
+        servicesDisabled = true;
+      } else if (e.code === 3) {
+        // Timeout
+        message = 'Location request timed out. Make sure location services are enabled and try again.';
+        servicesDisabled = false;
+      }
+
       setGpsError(message);
+      setLocationServicesDisabled(servicesDisabled);
     };
 
     watchIdRef.current = navigator.geolocation.watchPosition(handleSuccess, handleError, {
@@ -75,11 +129,21 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         watchIdRef.current = null;
       }
     };
-  }, [mode]);
+  }, [mode, isNative]);
 
   const value = useMemo<LocationCtx>(
-    () => ({ mode, setMode, manual, setManual, gps, gpsError, fix: mode === 'manual' ? manual : gps }),
-    [mode, manual, gps, gpsError],
+    () => ({
+      mode,
+      setMode,
+      manual,
+      setManual,
+      gps,
+      gpsError,
+      locationServicesDisabled,
+      fix: mode === 'manual' ? manual : gps,
+      openLocationSettings,
+    }),
+    [mode, manual, gps, gpsError, locationServicesDisabled, isNative],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
