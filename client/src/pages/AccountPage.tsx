@@ -21,6 +21,7 @@ import { AvatarPicker } from '../components/AvatarPicker';
 import { ErrorBox, PageHeading } from '../components/modern';
 import { fileToAvatar } from '../lib/image';
 import { useAsync } from '../hooks/useAsync';
+import { useAuth } from '../hooks/useAuth';
 
 type Dlg = 'delete' | 'signout' | 'password' | null;
 
@@ -73,6 +74,7 @@ function SettingRow({
 }
 
 export function AccountPage() {
+  const { logout: authLogout } = useAuth();
   const me = useAsync(() => meApi.get(), []);
   const [name, setName] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -139,25 +141,19 @@ export function AccountPage() {
     if (which === 'delete') {
       void run(async () => {
         await meApi.remove();
-        // After deleting account, logout and clear cookie
-        await authApi.logout();
-        document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax';
+        // After deleting account, use the auth context logout which handles both web and native
+        await authLogout();
+        // Navigate to home and force reload
         window.location.href = '/';
+        setTimeout(() => window.location.reload(), 100);
       });
     } else if (which === 'signout') {
-      // Don't use run() for signout to avoid reload issues
+      // Use the auth context logout which properly clears cookies and native tokens
       void (async () => {
-        try {
-          await authApi.logout();
-          // Clear the token cookie on client side as well
-          document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax';
-          window.location.href = '/';
-        } catch (err) {
-          console.error('Logout failed:', err);
-          // Even if logout API fails, clear cookie and redirect
-          document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax';
-          window.location.href = '/';
-        }
+        await authLogout();
+        // Navigate to home and force reload
+        window.location.href = '/';
+        setTimeout(() => window.location.reload(), 100);
       })();
     }
   };

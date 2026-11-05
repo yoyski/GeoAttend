@@ -15,11 +15,11 @@ function AppHeader() {
   return (
     <header className="mb-6 flex items-center justify-between">
       <div className="flex items-center gap-2.5 text-[17px] font-bold tracking-tight text-[var(--ink)]">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--pine)] shadow-[var(--shadow-md)]">
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-black text-white shadow-[var(--shadow-md)] ring-1 ring-[var(--line)]">
           <svg width="22" height="22" viewBox="0 0 56 56" aria-hidden="true">
-            <circle cx="28" cy="28" r="22" fill="none" stroke="var(--onp)" strokeWidth="4" strokeDasharray="5 5" />
-            <circle cx="28" cy="28" r="11" fill="none" stroke="var(--onp)" strokeWidth="4" />
-            <circle cx="28" cy="28" r="4.5" fill="var(--sig)" />
+            <circle cx="28" cy="28" r="22" fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray="5 5" />
+            <circle cx="28" cy="28" r="11" fill="none" stroke="currentColor" strokeWidth="4" />
+            <circle cx="28" cy="28" r="4.5" fill="currentColor" />
           </svg>
         </span>
         GeoAttend
