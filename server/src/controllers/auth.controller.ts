@@ -8,6 +8,7 @@ import { signJwt } from '../utils/jwt.js';
 import { HttpError } from '../utils/httpError.js';
 import { env } from '../config/env.js';
 import { getRandomAvatar } from '../utils/avatar.js';
+import { sendEmail, buildVerificationEmail, buildPasswordResetEmail } from '../services/mailer.js';
 
 export const register = async (req: Request, res: Response) => {
   const { name, email, password } = req.body as { name: string; email: string; password: string };
@@ -30,11 +31,22 @@ export const register = async (req: Request, res: Response) => {
     avatar: getRandomAvatar(), // Assign random avatar on registration
   });
 
+  // Send verification email
+  try {
+    await sendEmail({
+      to: email,
+      subject: 'Verify your GeoAttend account',
+      html: buildVerificationEmail(name, verificationToken),
+    });
+  } catch (error) {
+    console.error('Failed to send verification email:', error);
+    // Don't fail registration if email fails - user can request resend
+  }
+
   res.status(201).json({
     ok: true,
     data: {
       user: userDto(user),
-      verificationToken,
     },
   });
 };
@@ -134,7 +146,17 @@ export const forgot = async (req: Request, res: Response) => {
       },
     );
 
-    // TODO: Send email with resetToken
+    // Send password reset email
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'Reset your GeoAttend password',
+        html: buildPasswordResetEmail(user.name, resetToken),
+      });
+    } catch (error) {
+      console.error('Failed to send password reset email:', error);
+      // Don't reveal if email exists or if sending failed
+    }
   }
 
   res.json({

@@ -17,8 +17,10 @@ const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage').then(m =>
 const CreatePage = lazy(() => import('./pages/CreatePage').then(m => ({ default: m.CreatePage })));
 const ManagePage = lazy(() => import('./pages/ManagePage').then(m => ({ default: m.ManagePage })));
 const MinePage = lazy(() => import('./pages/MinePage').then(m => ({ default: m.MinePage })));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })));
 const SessionPage = lazy(() => import('./pages/SessionPage').then(m => ({ default: m.SessionPage })));
 const SheetPage = lazy(() => import('./pages/SheetPage').then(m => ({ default: m.SheetPage })));
+const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage').then(m => ({ default: m.VerifyEmailPage })));
 
 // Loading fallback component
 function LoadingFallback() {
@@ -90,7 +92,7 @@ export default function App() {
         setNativeToken(token);
 
         // Close the in-app browser if it is still open (no-op on Android, harmless)
-        Browser.close().catch(() => {});
+        Browser.close().catch(() => { });
 
         // Full reload so the auth check runs again with the new token
         window.location.replace('/attend');
@@ -112,6 +114,8 @@ export default function App() {
           {/* Public routes - no authentication required */}
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/auth/verify" element={<VerifyEmailPage />} />
+          <Route path="/auth/reset" element={<ResetPasswordPage />} />
           <Route path="/s/:id" element={<SessionPage />} />
 
           {/* Sheet editor: full-width page with no sidebar or top bar, like the prototype */}

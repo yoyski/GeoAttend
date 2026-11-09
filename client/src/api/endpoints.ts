@@ -60,3 +60,6 @@ export const authApi = {
   changePassword: (currentPassword: string, newPassword: string) =>
     api<{ message: string }>('post', '/me/password', { data: { currentPassword, newPassword } }),
 };
+
+// Convenience functions
+export const verifyEmail = (token: string) => authApi.verify(token);

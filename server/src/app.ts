@@ -21,6 +21,17 @@ const allowedOrigins = [
   ...nativeOrigins,
 ];
 
+// Force HTTPS in production (Render provides automatic SSL)
+if (env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    // Check if Render is handling HTTPS (X-Forwarded-Proto header)
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+}
+
 app.use(helmet());
 app.use(
   cors({

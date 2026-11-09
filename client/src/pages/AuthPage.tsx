@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { PasswordStrength } from '../components/PasswordStrength';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
@@ -343,7 +344,7 @@ export function AuthPage() {
                     </button>
                   </div>
                   <Input id="reg-password" type={pwType} value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} autoComplete="new-password" required />
-                  <p className="text-[13px] text-[var(--mut)]">At least 8 characters. We will email a link to verify your address.</p>
+                  <PasswordStrength password={password} />
                 </div>
                 <Alerts />
               </CardContent>

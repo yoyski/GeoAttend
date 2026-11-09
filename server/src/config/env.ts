@@ -13,6 +13,8 @@ const schema = z.object({
   LINK_SESSIONS_IN_LIST: z.enum(['true', 'false']).default('false'),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default('onboarding@resend.dev'),
 });
 
 export const env = schema.parse(process.env);

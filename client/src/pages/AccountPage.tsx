@@ -18,6 +18,7 @@ import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
 import { Avatar } from '../components/Avatar';
 import { AvatarPicker } from '../components/AvatarPicker';
+import { PasswordStrength } from '../components/PasswordStrength';
 import { ErrorBox, PageHeading } from '../components/modern';
 import { fileToAvatar } from '../lib/image';
 import { useAsync } from '../hooks/useAsync';
@@ -436,6 +437,7 @@ export function AccountPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
+              <PasswordStrength password={newPassword} />
             </div>
             <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
               <Button type="button" variant="outline" onClick={closePassword}>
