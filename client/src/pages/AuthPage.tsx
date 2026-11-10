@@ -14,7 +14,7 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 let socialReady = false;
 
-// Native app: Google's account picker + an API call. Web: normal redirect.
+// Native app: Google's account picker + an API call (no browser page). Web: normal redirect.
 const handleGoogleLogin = async () => {
   if (Capacitor.isNativePlatform()) {
     if (!socialReady) {
@@ -36,7 +36,6 @@ const handleGoogleLogin = async () => {
     window.location.href = `${API_URL}/auth/google`;
   }
 };
-
 
 /* Where to return after logging in. Stored in localStorage so it survives the email-verification step. */
 const RETURN_KEY = 'geoattend:returnTo';
@@ -67,6 +66,29 @@ function Logo() {
       <circle cx="28" cy="28" r="25" fill="none" stroke="var(--onp)" strokeWidth="3" strokeDasharray="4 4" />
       <circle cx="28" cy="28" r="13" fill="none" stroke="var(--onp)" strokeWidth="3" />
       <circle cx="28" cy="28" r="5" fill="var(--sig)" />
+    </svg>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"
+      />
+      <path
+        fill="#34A853"
+        d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707 0-.593.102-1.17.282-1.709V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.335z"
+      />
+      <path
+        fill="#EA4335"
+        d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"
+      />
     </svg>
   );
 }
@@ -103,6 +125,16 @@ export function AuthPage() {
     setMode(m);
     setError('');
     setMessage('');
+  };
+
+  // Google sign-in with visible errors (cancelled picker, bad config, server rejection).
+  const onGoogle = async () => {
+    setError('');
+    try {
+      await handleGoogleLogin();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google sign-in failed.');
+    }
   };
 
   const run = async (e: FormEvent, fn: () => Promise<void>, fail: string) => {
@@ -228,26 +260,9 @@ export function AuthPage() {
                   type="button"
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2"
-                  onClick={handleGoogleLogin}
+                  onClick={onGoogle}
                 >
-                  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-                    <path
-                      fill="#4285F4"
-                      d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707 0-.593.102-1.17.282-1.709V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.335z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"
-                    />
-                  </svg>
+                  <GoogleIcon />
                   Sign in with Google
                 </Button>
 
@@ -300,26 +315,9 @@ export function AuthPage() {
                   type="button"
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2"
-                  onClick={handleGoogleLogin}
+                  onClick={onGoogle}
                 >
-                  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-                    <path
-                      fill="#4285F4"
-                      d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707 0-.593.102-1.17.282-1.709V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.335z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"
-                    />
-                  </svg>
+                  <GoogleIcon />
                   Sign up with Google
                 </Button>
 
