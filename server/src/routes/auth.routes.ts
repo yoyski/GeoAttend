@@ -24,4 +24,7 @@ r.get('/google', (req, res, next) => {
 });
 r.get('/google/callback', h(c.googleCallback));
 
+// Native Google Sign-In: receives ID token from @capgo/capacitor-social-login
+r.post('/google/token', h(c.googleToken));
+
 export default r;

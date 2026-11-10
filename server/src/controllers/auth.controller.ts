@@ -241,3 +241,62 @@ export const googleCallback = async (req: Request, res: Response) => {
     res.redirect(`${env.CLIENT_URL}/auth/callback?token=${token}`);
   })(req, res);
 };
+
+export const googleToken = async (req: Request, res: Response) => {
+  const { idToken } = req.body as { idToken: string };
+
+  if (!idToken) {
+    throw new HttpError(400, 'VALIDATION', 'ID token is required.');
+  }
+
+  // Verify the token with Google
+  const { OAuth2Client } = await import('google-auth-library');
+  const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
+
+  let payload;
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch (error) {
+    throw new HttpError(401, 'UNAUTHENTICATED', 'Invalid Google token.');
+  }
+
+  if (!payload?.email) {
+    throw new HttpError(401, 'UNAUTHENTICATED', 'Email not provided by Google.');
+  }
+
+  // Find or create user
+  let user = await User.findOne({ email: payload.email });
+
+  if (!user) {
+    // Create new user from Google data
+    user = await User.create({
+      email: payload.email,
+      name: payload.name || payload.email.split('@')[0],
+      verified: payload.email_verified || false,
+      authProvider: 'google',
+      googleId: payload.sub,
+      avatar: getRandomAvatar(),
+    });
+  } else if (!user.googleId) {
+    // Link Google account to existing user
+    user.googleId = payload.sub;
+    user.authProvider = 'google';
+    if (payload.email_verified) {
+      user.verified = true;
+    }
+    await user.save();
+  }
+
+  const token = signJwt(user);
+
+  res.json({
+    data: {
+      user: userDto(user),
+      token,
+    },
+  });
+};

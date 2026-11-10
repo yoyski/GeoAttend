@@ -59,6 +59,8 @@ export const authApi = {
     api<{ user: Me }>('post', '/auth/reset', { data: { token, password } }),
   changePassword: (currentPassword: string, newPassword: string) =>
     api<{ message: string }>('post', '/me/password', { data: { currentPassword, newPassword } }),
+  googleToken: (idToken: string) =>
+    api<{ user: Me; token: string }>('post', '/auth/google/token', { data: { idToken } }),
 };
 
 // Convenience functions

@@ -1,30 +1,39 @@
 import { useState, type FormEvent } from 'react';
 import { useLocation } from 'react-router-dom';
 import { authApi } from '../api/endpoints';
+import { setNativeToken } from '../api/client';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { PasswordStrength } from '../components/PasswordStrength';
-import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
+import { SocialLogin } from '@capgo/capacitor-social-login';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
-// Helper to handle Google OAuth on both web and mobile
-const handleGoogleLogin = async () => {
-  const isNative = Capacitor.isNativePlatform();
-  const googleUrl = `${API_URL}/auth/google${isNative ? '?mobile=true' : ''}`;
+let socialReady = false;
 
-  if (isNative) {
-    // On mobile, use Capacitor Browser to open OAuth in-app
-    await Browser.open({
-      url: googleUrl,
-      windowName: '_self'
+// Native app: Google's account picker + an API call. Web: normal redirect.
+const handleGoogleLogin = async () => {
+  if (Capacitor.isNativePlatform()) {
+    if (!socialReady) {
+      await SocialLogin.initialize({
+        google: { webClientId: import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID },
+      });
+      socialReady = true;
+    }
+    const res = await SocialLogin.login({
+      provider: 'google',
+      options: { scopes: ['email', 'profile'] },
     });
+    const idToken = (res.result as { idToken?: string }).idToken;
+    if (!idToken) throw new Error('Google did not return an ID token.');
+    const { token } = await authApi.googleToken(idToken);
+    setNativeToken(token);
+    window.location.replace('/attend');
   } else {
-    // On web, use normal redirect
-    window.location.href = googleUrl;
+    window.location.href = `${API_URL}/auth/google`;
   }
 };
 
