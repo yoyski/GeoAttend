@@ -25,7 +25,7 @@ const handleGoogleLogin = async () => {
     }
     const res = await SocialLogin.login({
       provider: 'google',
-      options: { scopes: ['email', 'profile'] },
+      options: {},
     });
     const idToken = (res.result as { idToken?: string }).idToken;
     if (!idToken) throw new Error('Google did not return an ID token.');
