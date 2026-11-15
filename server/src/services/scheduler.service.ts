@@ -40,11 +40,27 @@ async function checkScheduledSessions(now: Date) {
         const startsAt = new Date(session.startsAt);
         const endsAt = new Date(session.endsAt);
         
-        // Check if current time is within the session window (within 2 minutes of start to avoid missing)
-        const startWindow = new Date(startsAt.getTime() - 2 * 60 * 1000); // 2 minutes before
-        const endWindow = new Date(startsAt.getTime() + 2 * 60 * 1000); // 2 minutes after
+        // For recurring sessions, compare TIME OF DAY only (not full datetime)
+        // Extract hours and minutes from both the stored time and current time
+        const startHour = startsAt.getUTCHours();
+        const startMinute = startsAt.getUTCMinutes();
+        const endHour = endsAt.getUTCHours();
+        const endMinute = endsAt.getUTCMinutes();
         
-        if (now >= startWindow && now <= endWindow && now < endsAt) {
+        const nowHour = now.getUTCHours();
+        const nowMinute = now.getUTCMinutes();
+        
+        // Convert to minutes since midnight for easier comparison
+        const startTimeMinutes = startHour * 60 + startMinute;
+        const endTimeMinutes = endHour * 60 + endMinute;
+        const nowTimeMinutes = nowHour * 60 + nowMinute;
+        
+        // Check if current time is within 2 minutes of start time
+        const startWindow = startTimeMinutes - 2;
+        const endWindow = startTimeMinutes + 2;
+        
+        // Auto-open if we're within the start window and before the end time
+        if (nowTimeMinutes >= startWindow && nowTimeMinutes <= endWindow && nowTimeMinutes < endTimeMinutes) {
           // Open the session - schedule enabled means it should always auto-open
           await Session.collection.updateOne(
             { _id: session._id },
@@ -75,29 +91,27 @@ async function checkExpiredSessionsInternal(now: Date) {
     }).toArray();
 
     if (expiredSessions.length > 0) {
-      console.log(`[Scheduler] Found ${expiredSessions.length} expired session(s), checking auto-close rules`);
+      console.log(`[Scheduler] Found ${expiredSessions.length} expired session(s)`);
       
       for (const session of expiredSessions) {
         try {
-          // Only auto-close if:
-          // 1. Session has schedule enabled AND
-          // 2. autoClose is true (or not set, defaults to true)
+          // Check if this is a scheduled session with autoClose disabled
           const hasSchedule = session.schedule?.enabled === true;
-          const autoClose = session.schedule?.autoClose !== false; // true by default
-          const shouldClose = hasSchedule && autoClose;
+          const autoCloseDisabled = hasSchedule && session.schedule?.autoClose === false;
           
-          if (shouldClose) {
-            await Session.collection.updateOne(
-              { _id: session._id },
-              { $set: { status: 'Closed' } }
-            );
-            
-            liveHub.publish(String(session._id), 'status', { status: 'Closed' });
-            console.log(`[Scheduler] Auto-closed scheduled session: ${session._id} - "${session.title}"`);
-          } else if (hasSchedule) {
+          if (autoCloseDisabled) {
             console.log(`[Scheduler] Skipped auto-close (autoClose disabled): ${session._id} - "${session.title}"`);
+            continue;
           }
-          // Non-scheduled sessions are never auto-closed - must be closed manually
+          
+          // Auto-close all other expired sessions (both scheduled and non-scheduled)
+          await Session.collection.updateOne(
+            { _id: session._id },
+            { $set: { status: 'Closed' } }
+          );
+          
+          liveHub.publish(String(session._id), 'status', { status: 'Closed' });
+          console.log(`[Scheduler] Auto-closed expired session: ${session._id} - "${session.title}"`);
         } catch (err) {
           console.error(`[Scheduler] Error closing session ${session._id}:`, err);
         }
@@ -120,28 +134,33 @@ export async function checkExpiredSessions() {
     endsAt: { $lte: now },
   }).toArray();
 
+  let closedCount = 0;
+
   if (expiredSessions.length > 0) {
-    console.log(`[Scheduler] Found ${expiredSessions.length} expired session(s), checking auto-close rules`);
+    console.log(`[Scheduler] Found ${expiredSessions.length} expired session(s)`);
     
     for (const session of expiredSessions) {
       try {
-        // Only auto-close scheduled sessions with autoClose enabled
+        // Check if this is a scheduled session with autoClose disabled
         const hasSchedule = session.schedule?.enabled === true;
-        const autoClose = session.schedule?.autoClose !== false;
-        const shouldClose = hasSchedule && autoClose;
+        const autoCloseDisabled = hasSchedule && session.schedule?.autoClose === false;
         
-        if (shouldClose) {
-          await Session.collection.updateOne(
-            { _id: session._id },
-            { $set: { status: 'Closed' } }
-          );
-          liveHub.publish(String(session._id), 'status', { status: 'Closed' });
+        if (autoCloseDisabled) {
+          continue;
         }
+        
+        // Auto-close all other expired sessions (both scheduled and non-scheduled)
+        await Session.collection.updateOne(
+          { _id: session._id },
+          { $set: { status: 'Closed' } }
+        );
+        liveHub.publish(String(session._id), 'status', { status: 'Closed' });
+        closedCount++;
       } catch (err) {
         console.error(`[Scheduler] Error closing session ${session._id}:`, err);
       }
     }
   }
 
-  return expiredSessions.length;
+  return closedCount;
 }
