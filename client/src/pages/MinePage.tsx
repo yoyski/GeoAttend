@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { sessionsApi } from '../api/endpoints';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
 // Kept from the custom kit (GeoAttend-specific pieces)
 import { ErrorBox, PageHeading, StatusChip } from '../components/modern';
-import { useAsync } from '../hooks/useAsync';
+import { useMySessions } from '../hooks/useCachedApi';
 import type { Status } from '../types';
 
 const FILTERS = ['', 'Open', 'Closed', 'Cancelled'] as const;
@@ -33,7 +32,14 @@ const tabCls = (on: boolean) =>
 
 export function MinePage() {
   const [status, setStatus] = useState<Status | ''>('');
-  const list = useAsync(() => sessionsApi.listMine(status || undefined), [status]);
+  const { data, error, isLoading } = useMySessions(status || undefined);
+
+  // Map TanStack Query response to match useAsync interface
+  const list = {
+    data,
+    error,
+    loading: isLoading,
+  };
 
   const isEmpty = !list.loading && list.data?.length === 0;
 

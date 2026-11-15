@@ -20,7 +20,9 @@ import { Skeleton } from '../components/ui/skeleton';
 // Kept from the custom kit (GeoAttend-specific logic)
 import { ErrorBox, StatusChip, toLocalInput } from '../components/modern';
 import type { RecordsResponse } from '../types';
-import { useAsync } from '../hooks/useAsync';
+import { useMySession } from '../hooks/useCachedApi';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../hooks/useQuery';
 import type { CreatorSession } from '../types';
 
 const mut = { color: 'var(--mut)' } as const;
@@ -194,7 +196,17 @@ export function ManagePage() {
   const loc = useLocation();
   const navState = (loc.state ?? null) as { passcode?: string; toast?: string } | null;
 
-  const session = useAsync(() => sessionsApi.getMine(id), [id]);
+  const queryClient = useQueryClient();
+  const { data, error: queryError, isLoading, refetch } = useMySession(id);
+
+  // Map TanStack Query response to match useAsync interface
+  const session = {
+    data,
+    error: queryError,
+    loading: isLoading,
+    reload: () => refetch(),
+  };
+
   const [busy, setBusy] = useState<'pdf' | 'delete' | null>(null);
   const [absentList, setAbsentList] = useState<string[] | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
@@ -223,22 +235,23 @@ export function ManagePage() {
   useEffect(() => {
     const es = new EventSource(sessionsApi.liveUrl(id));
     const refresh = () => {
-      session.reload();
+      // Invalidate cache to trigger refetch
+      queryClient.invalidateQueries({ queryKey: queryKeys.mySession(id) });
       setAbsentList(null);
     };
     es.addEventListener('checkin', refresh);
     es.addEventListener('removed', refresh);
     es.addEventListener('status', refresh);
     return () => es.close();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, queryClient]);
 
   const run = async (fn: () => Promise<unknown>, ok?: string) => {
     setError(null);
     try {
       await fn();
       if (ok) say(ok);
-      await session.reload();
+      // Invalidate cache to trigger refetch
+      await queryClient.invalidateQueries({ queryKey: queryKeys.mySession(id) });
       setAbsentList(null);
       return true;
     } catch (e) {

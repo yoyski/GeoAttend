@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { meApi, sessionsApi } from '../api/endpoints';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
 // Kept from the custom kit: GeoAttend-specific pieces with no shadcn equivalent.
 import { PageHeading, StatusChip } from '../components/modern';
-import { useAsync } from '../hooks/useAsync';
+import { useNearbySessions, useMeHistory } from '../hooks/useCachedApi';
 import { useLocationCtx } from '../hooks/useLocation';
 import { useRequireLogin } from '../hooks/useRequireLogin';
 import type { Fix } from '../types';
@@ -109,16 +108,25 @@ export function AttendPage() {
     );
   }, [fix?.lat, fix?.lng, fix?.accuracy]);
 
-  const nearby = useAsync(
-    () => (tab === 'sessions' && anchor ? sessionsApi.nearby(anchor) : Promise.resolve(null)),
-    [anchor?.lat, anchor?.lng, anchor?.accuracy, tab],
+  // Use TanStack Query hooks with conditional enabling
+  const nearbyQuery = useNearbySessions(
+    anchor || { lat: 0, lng: 0, accuracy: 0 },
+    tab === 'sessions' && !!anchor
   );
+  const historyQuery = useMeHistory();
 
-  // History belongs to an account: logged-out visitors get a log-in prompt instead of a failing request.
-  const history = useAsync(
-    () => (tab === 'history' && user ? meApi.history() : Promise.resolve(null)),
-    [tab, !!user],
-  );
+  // Map TanStack Query responses to match useAsync interface
+  const nearby = {
+    data: tab === 'sessions' && anchor ? nearbyQuery.data : null,
+    error: nearbyQuery.error,
+    loading: nearbyQuery.isLoading,
+  };
+
+  const history = {
+    data: tab === 'history' && user ? historyQuery.data : null,
+    error: historyQuery.error,
+    loading: historyQuery.isLoading,
+  };
 
   const noneHere = tab === 'sessions' && !!fix && !nearby.error && !!nearby.data && nearby.data.length === 0;
 
