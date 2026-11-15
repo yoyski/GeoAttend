@@ -116,16 +116,19 @@ export function AttendPage() {
   const historyQuery = useMeHistory();
 
   // Map TanStack Query responses to match useAsync interface
+  // isLoading = true only when there's no data yet (first load)
   const nearby = {
     data: tab === 'sessions' && anchor ? nearbyQuery.data : null,
     error: nearbyQuery.error,
-    loading: nearbyQuery.isLoading,
+    loading: nearbyQuery.isLoading, // Only show skeleton when no cached data exists
+    fetching: nearbyQuery.isFetching, // Background refresh indicator
   };
 
   const history = {
     data: tab === 'history' && user ? historyQuery.data : null,
     error: historyQuery.error,
-    loading: historyQuery.isLoading,
+    loading: historyQuery.isLoading, // Only show skeleton when no cached data exists
+    fetching: historyQuery.isFetching, // Background refresh indicator
   };
 
   const noneHere = tab === 'sessions' && !!fix && !nearby.error && !!nearby.data && nearby.data.length === 0;

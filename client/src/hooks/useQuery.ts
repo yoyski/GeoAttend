@@ -39,4 +39,7 @@ export const queryKeys = {
   // Sessions - Creator
   mySessions: ['sessions', 'mine'] as const,
   mySession: (id: string) => ['sessions', 'mine', id] as const,
+  
+  // Sheet
+  sheetData: (id: string, isViewOnly: boolean) => ['sheet', id, isViewOnly] as const,
 };
