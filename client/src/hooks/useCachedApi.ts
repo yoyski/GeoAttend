@@ -47,6 +47,7 @@ export function useSession(id: string, fix: Fix, token?: string) {
     queryKey: queryKeys.session(id),
     queryFn: () => sessionsApi.detail(id, fix, token),
     staleTime: 1 * 60 * 1000, // 1 minute
+    enabled: !!fix, // Only fetch when we have location
   });
 }
 

@@ -32,13 +32,16 @@ const tabCls = (on: boolean) =>
 
 export function MinePage() {
   const [status, setStatus] = useState<Status | ''>('');
-  const { data, error, isLoading } = useMySessions(status || undefined);
+  const { data, error, isLoading, isFetching } = useMySessions(status || undefined);
 
   // Map TanStack Query response to match useAsync interface
+  // isLoading = true only when there's no data yet (first load)
+  // isFetching = true when fetching (even with cached data)
   const list = {
     data,
     error,
-    loading: isLoading,
+    loading: isLoading, // Only show skeleton when no cached data exists
+    fetching: isFetching, // Background refresh indicator
   };
 
   const isEmpty = !list.loading && list.data?.length === 0;

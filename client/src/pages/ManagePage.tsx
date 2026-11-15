@@ -197,13 +197,15 @@ export function ManagePage() {
   const navState = (loc.state ?? null) as { passcode?: string; toast?: string } | null;
 
   const queryClient = useQueryClient();
-  const { data, error: queryError, isLoading, refetch } = useMySession(id);
+  const { data, error: queryError, isLoading, isFetching, refetch } = useMySession(id);
 
   // Map TanStack Query response to match useAsync interface
+  // isLoading = true only when there's no data yet (first load)
   const session = {
     data,
     error: queryError,
-    loading: isLoading,
+    loading: isLoading, // Only show skeleton when no cached data exists
+    fetching: isFetching, // Background refresh indicator
     reload: () => refetch(),
   };
 

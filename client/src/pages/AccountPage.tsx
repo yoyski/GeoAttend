@@ -21,7 +21,7 @@ import { AvatarPicker } from '../components/AvatarPicker';
 import { PasswordStrength } from '../components/PasswordStrength';
 import { ErrorBox, PageHeading } from '../components/modern';
 import { fileToAvatar } from '../lib/image';
-import { useAsync } from '../hooks/useAsync';
+import { useMe } from '../hooks/useCachedApi';
 import { useAuth } from '../hooks/useAuth';
 
 type Dlg = 'delete' | 'signout' | 'password' | null;
@@ -76,7 +76,17 @@ function SettingRow({
 
 export function AccountPage() {
   const { logout: authLogout } = useAuth();
-  const me = useAsync(() => meApi.get(), []);
+  const { data, error: queryError, isLoading, isFetching, refetch } = useMe();
+
+  // Map TanStack Query response to match useAsync interface
+  const me = {
+    data,
+    error: queryError,
+    loading: isLoading, // Only show skeleton when no cached data exists
+    fetching: isFetching, // Background refresh indicator
+    reload: () => refetch(),
+  };
+
   const [name, setName] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');

@@ -12,7 +12,7 @@ import { Label } from '../components/ui/label';
 import { Skeleton } from '../components/ui/skeleton';
 // Kept from the custom kit
 import { ErrorBox, StatusChip } from '../components/modern';
-import { useAsync } from '../hooks/useAsync';
+import { useSession } from '../hooks/useCachedApi';
 import { useLocationCtx } from '../hooks/useLocation';
 import { useAuth } from '../hooks/useAuth';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -92,10 +92,15 @@ export function SessionPage() {
   const [venue, setVenue] = useState<Venue | null>(null);
   const [customFields, setCustomFields] = useState<Record<string, string>>({});
 
-  const session = useAsync(
-    () => (fix ? sessionsApi.detail(id, fix) : Promise.resolve(null)),
-    [id, fix?.lat, fix?.lng, fix?.accuracy],
-  );
+  const { data, error: queryError, isLoading, isFetching } = useSession(id, fix || { lat: 0, lng: 0, accuracy: 0 });
+
+  // Map TanStack Query response to match useAsync interface
+  const session = {
+    data,
+    error: queryError,
+    loading: isLoading, // Only show skeleton when no cached data exists
+    fetching: isFetching, // Background refresh indicator
+  };
 
   const s = session.data;
   const hidden = session.error?.code === 'NOT_AVAILABLE_HERE';
