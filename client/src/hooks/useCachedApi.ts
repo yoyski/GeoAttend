@@ -11,7 +11,6 @@ export function useMe() {
   return useQuery<any, ApiError>({
     queryKey: queryKeys.me,
     queryFn: () => meApi.get(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
@@ -22,7 +21,6 @@ export function useMeHistory() {
   return useQuery<any, ApiError>({
     queryKey: queryKeys.meHistory,
     queryFn: () => meApi.history(),
-    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
 
@@ -34,7 +32,6 @@ export function useNearbySessions(fix: Fix, enabled = true) {
   return useQuery<any, ApiError>({
     queryKey: queryKeys.nearbysessions(lat, lng),
     queryFn: () => sessionsApi.nearby(fix),
-    staleTime: 30 * 1000, // 30 seconds (sessions change frequently)
     enabled,
   });
 }
@@ -46,7 +43,6 @@ export function useSession(id: string, fix: Fix, token?: string) {
   return useQuery<any, ApiError>({
     queryKey: queryKeys.session(id),
     queryFn: () => sessionsApi.detail(id, fix, token),
-    staleTime: 1 * 60 * 1000, // 1 minute
     enabled: !!fix, // Only fetch when we have location
   });
 }
@@ -58,7 +54,6 @@ export function useSessionRecords(id: string) {
   return useQuery<any, ApiError>({
     queryKey: queryKeys.sessionRecords(id),
     queryFn: () => sessionsApi.records(id),
-    staleTime: 10 * 1000, // 10 seconds (frequently updated)
   });
 }
 
@@ -69,7 +64,6 @@ export function useMySessions(status?: Status) {
   return useQuery<any, ApiError>({
     queryKey: queryKeys.mySessions,
     queryFn: () => sessionsApi.listMine(status),
-    staleTime: 1 * 60 * 1000, // 1 minute
   });
 }
 
@@ -80,7 +74,6 @@ export function useMySession(id: string) {
   return useQuery<any, ApiError>({
     queryKey: queryKeys.mySession(id),
     queryFn: () => sessionsApi.getMine(id),
-    staleTime: 1 * 60 * 1000, // 1 minute
   });
 }
 

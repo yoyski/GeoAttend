@@ -8,15 +8,16 @@ import { LocationProvider } from './hooks/useLocation';
 import '@tabler/icons-webfont/dist/tabler-icons.min.css';
 import './index.css';
 
-// Create a client with optimized defaults for free tier deployment
+// Create a client with optimized defaults for session-based caching
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
-      gcTime: 10 * 60 * 1000, // Cache persists for 10 minutes (formerly cacheTime)
+      staleTime: Infinity, // Data never goes stale during app session
+      gcTime: Infinity, // Cache persists forever (until app closes)
       retry: 1, // Only retry once to avoid hammering free tier server
-      refetchOnWindowFocus: false, // Prevent excessive refetches
-      refetchOnReconnect: true, // Refetch on reconnect
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+      refetchOnReconnect: true, // Refetch on reconnect (network came back)
+      refetchOnMount: false, // Don't refetch when component mounts if data exists
     },
   },
 });
