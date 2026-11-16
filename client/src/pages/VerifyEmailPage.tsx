@@ -36,10 +36,10 @@ export function VerifyEmailPage() {
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#667eea] to-[#764ba2] p-4">
             <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
                 {status === 'loading' && (
-                    <div className="text-center">
-                        <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-[#667eea] border-r-transparent" />
-                        <h1 className="text-2xl font-bold text-gray-800">Verifying your email...</h1>
-                        <p className="mt-2 text-gray-600">Please wait</p>
+                    <div className="space-y-4">
+                        <div className="mx-auto h-16 w-16 animate-pulse rounded-full bg-gray-200" />
+                        <div className="mx-auto h-8 w-48 animate-pulse rounded-lg bg-gray-200" />
+                        <div className="mx-auto h-6 w-32 animate-pulse rounded-lg bg-gray-200" />
                     </div>
                 )}
 
