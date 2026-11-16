@@ -76,13 +76,14 @@ function SettingRow({
 
 export function AccountPage() {
   const { logout: authLogout } = useAuth();
+  const { user: authUser, loading: authLoading } = useAuth();
   const { data, error: queryError, isLoading, isFetching, refetch } = useMe();
 
   // Map TanStack Query response to match useAsync interface
   const me = {
     data,
     error: queryError,
-    loading: isLoading, // Only show skeleton when no cached data exists
+    loading: isLoading || authLoading, // Show skeleton during auth check OR data fetch
     fetching: isFetching, // Background refresh indicator
     reload: () => refetch(),
   };

@@ -61,8 +61,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
  */
 function Gated({ children, title, desc, icon }: { children: React.ReactNode; title: string; desc: string; icon?: string }) {
   const { user, loading } = useAuth();
-  if (loading) return <p className="py-10 text-center text-sm text-[var(--mut)]">Loading...</p>;
-  if (!user) return <LoginGate title={title} desc={desc} icon={icon} />;
+  // Don't show "Loading..." - let the page component handle its own loading state
+  // This prevents the centered "Loading..." text that appears before the skeleton
+  if (!user && !loading) return <LoginGate title={title} desc={desc} icon={icon} />;
   return <>{children}</>;
 }
 
