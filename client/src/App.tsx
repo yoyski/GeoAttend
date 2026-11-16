@@ -22,15 +22,21 @@ const SessionPage = lazy(() => import('./pages/SessionPage').then(m => ({ defaul
 const SheetPage = lazy(() => import('./pages/SheetPage').then(m => ({ default: m.SheetPage })));
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage').then(m => ({ default: m.VerifyEmailPage })));
 
-// Loading fallback component
+// Loading fallback component for lazy-loaded pages
+// Shows a minimal skeleton instead of spinner to match the app's design
 function LoadingFallback() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[var(--pine)] border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
-          <span className="sr-only">Loading...</span>
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="w-full max-w-2xl space-y-4">
+        {/* Header skeleton */}
+        <div className="h-10 w-48 animate-pulse rounded-lg bg-[var(--line)]" />
+        <div className="h-6 w-64 animate-pulse rounded-lg bg-[var(--line)]" />
+
+        {/* Content skeleton */}
+        <div className="mt-6 space-y-3">
+          <div className="h-32 w-full animate-pulse rounded-2xl bg-[var(--line)]" />
+          <div className="h-32 w-full animate-pulse rounded-2xl bg-[var(--line)]" />
         </div>
-        <p className="mt-3 text-sm text-[var(--mut)]">Loading...</p>
       </div>
     </div>
   );
