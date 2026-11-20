@@ -34,16 +34,16 @@ function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: 
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={
-        'relative h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)] ' +
-        (checked ? 'bg-[var(--pine)]' : 'bg-[var(--line)]')
-      }
+      className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--pine)_25%,transparent)]"
+      style={{ background: checked ? 'var(--pine)' : 'var(--line)' }}
     >
       <span
-        className={
-          'absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow-[var(--shadow-md)] transition-transform ' +
-          (checked ? 'translate-x-5' : 'translate-x-0')
-        }
+        aria-hidden="true"
+        className="inline-block h-5 w-5 rounded-full shadow transition-transform"
+        style={{
+          background: checked ? 'var(--card)' : 'var(--mut)',
+          transform: checked ? 'translateX(22px)' : 'translateX(2px)',
+        }}
       />
     </button>
   );
