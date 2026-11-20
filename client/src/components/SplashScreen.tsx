@@ -1,21 +1,34 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 
 export function SplashScreen() {
+    const { authReady } = useAuth();
     const [visible, setVisible] = useState(true);
     const [leaving, setLeaving] = useState(false);
 
     useEffect(() => {
-        const showForMs = 2400;
+        // Show splash for minimum 1 second (brand time)
+        const minShowTime = 1000;
         const fadeMs = 500;
 
-        const leavingTimer = setTimeout(() => setLeaving(true), showForMs);
-        const visibleTimer = setTimeout(() => setVisible(false), showForMs + fadeMs);
+        const startTime = Date.now();
 
-        return () => {
-            clearTimeout(leavingTimer);
-            clearTimeout(visibleTimer);
+        // Wait for BOTH minimum time AND auth check
+        const checkReady = () => {
+            const elapsed = Date.now() - startTime;
+            const minTimeReached = elapsed >= minShowTime;
+
+            if (authReady && minTimeReached) {
+                setLeaving(true);
+                setTimeout(() => setVisible(false), fadeMs);
+            } else {
+                // Check again in 100ms
+                setTimeout(checkReady, 100);
+            }
         };
-    }, []);
+
+        checkReady();
+    }, [authReady]);
 
     if (!visible) return null;
 
