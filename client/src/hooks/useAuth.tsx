@@ -6,6 +6,7 @@ import type { Me } from '../types';
 interface AuthContextType {
     user: Me | null;
     loading: boolean;
+    authReady: boolean;
     logout: () => Promise<void>;
 }
 
@@ -14,6 +15,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<Me | null>(null);
     const [loading, setLoading] = useState(true);
+    const [authReady, setAuthReady] = useState(false);
 
     // Check if user is logged in on mount
     useEffect(() => {
@@ -25,6 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(null);
             } finally {
                 setLoading(false);
+                // Signal that auth check is complete (for splash screen)
+                setAuthReady(true);
             }
         };
         checkAuth();
@@ -43,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, logout }}>
+        <AuthContext.Provider value={{ user, loading, logout, authReady }}>
             {children}
         </AuthContext.Provider>
     );
